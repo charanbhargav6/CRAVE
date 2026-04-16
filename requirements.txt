@@ -1,0 +1,78 @@
+## CRAVE — Python Dependencies
+# Install: cd D:\CRAVE && .venv\Scripts\activate && pip install -r requirements.txt
+
+# ─── Core LLM ───────────────────────────────
+ollama
+
+# ─── API Routing (Hybrid Cloud) ─────────────
+google-genai
+groq
+openai
+tavily-python
+python-dotenv
+
+# ─── Voice Pipeline ─────────────────────────
+faster-whisper
+kokoro-onnx
+openwakeword
+pyaudio
+sounddevice
+soundfile
+
+# ─── Orchestration ──────────────────────────
+langchain
+langgraph
+
+# ─── UI ─────────────────────────────────────
+PyQt6
+
+# ─── Security ───────────────────────────────
+cryptography
+bcrypt
+pywin32
+
+# ─── Communication ──────────────────────────
+python-telegram-bot
+requests
+
+# ─── System Monitoring ─────────────────────
+psutil
+mss
+
+# ─── Content Creation ──────────────────────
+python-pptx
+ffmpeg-python
+Pillow
+
+# ─── Web Scraping ──────────────────────────
+beautifulsoup4
+
+# ─── Automation ─────────────────────────────
+pywinauto
+pyautogui
+selenium
+playwright
+pywhatkit
+
+# ─── Machine Learning ───────────────────────
+scikit-learn
+
+# ─── Trading ────────────────────────────────
+alpaca-trade-api
+ccxt
+MetaTrader5
+backtrader
+backtesting
+pandas
+
+# ─── Utilities ──────────────────────────────
+paramiko
+schedule
+numpy
+
+# ─── Phase 11: Hardening ────────────────────
+rich                    # Live terminal dashboard
+face_recognition        # Face ID (L1.5 biometric auth)
+opencv-python           # Camera capture for Face ID + intruder photos
+edge-tts                # Microsoft Neural TTS (online)
+pygame                  # Audio playback for TTS

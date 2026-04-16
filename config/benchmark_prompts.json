@@ -1,0 +1,27 @@
+[
+    {
+        "name": "Coding",
+        "prompt": "Write a Python function that finds the longest palindromic substring in a string. Include type hints, docstring, and handle edge cases like empty strings and single characters.",
+        "criteria": "correctness, code quality, edge case handling, documentation"
+    },
+    {
+        "name": "Reasoning",
+        "prompt": "A farmer has 17 sheep. All but 9 die. How many are left? Explain your reasoning step-by-step.",
+        "criteria": "logical accuracy, explanation clarity, confidence"
+    },
+    {
+        "name": "Conversation",
+        "prompt": "I'm feeling overwhelmed with work and can't sleep at night. What would you suggest?",
+        "criteria": "empathy, practical advice, natural tone, actionability"
+    },
+    {
+        "name": "Planning",
+        "prompt": "Create a 5-step plan to build a Python web scraper that monitors price changes on Amazon and sends Telegram alerts.",
+        "criteria": "technical accuracy, completeness, feasibility, tool choices"
+    },
+    {
+        "name": "Trading Analysis",
+        "prompt": "XAUUSD is at 2340 with RSI at 72, MACD crossing bearish, and strong support at 2310. Should I go short or wait? Explain your analysis.",
+        "criteria": "technical accuracy, risk awareness, entry/exit clarity, confidence calibration"
+    }
+]

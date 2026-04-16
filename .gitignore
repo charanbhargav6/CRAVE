@@ -1,0 +1,91 @@
+# ═══════════════════════════════════════════
+# CRAVE .gitignore — Comprehensive Rules
+# ═══════════════════════════════════════════
+
+# ─── Virtual Environments ────────────────
+.venv/
+.sandbox/
+venv/
+env/
+
+# ─── Python Cache ────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+
+# ─── Security — NEVER commit these ──────
+data/vault/
+data/.master_key
+data/telegram_token.txt
+data/face_encodings.dat
+data/face_lbph_model.yml
+data/credentials.json.enc
+*.enc
+.env
+.env.*
+
+# ─── Secrets & OAuth ────────────────────
+config/youtube_client_secret.json
+
+# ─── Runtime Data (generated at runtime) ─
+data/trading_memory.json
+data/task_memory.json
+data/model_manager_state.json
+data/knowledge_graph.json
+data/user_profile.json
+data/automation_test.txt
+data/visuals/
+data/youtube_workspace/
+
+# ─── ML Models (too large, download at setup)
+models/
+Ollama/
+
+# ─── External Tools (binary downloads) ──
+tools/
+
+# ─── Generated Media ────────────────────
+workspace/
+*.mp4
+*.mp3
+*.wav
+*.avi
+
+# ─── Generated Reports ──────────────────
+CRAVE_Report.html
+CRAVE_System_Report.pdf
+
+# ─── Knowledge Base (runtime-generated) ─
+Knowledge/skills/*.md
+
+# ─── Logs ────────────────────────────────
+Logs/
+logs/
+*.log
+
+# ─── Test Artifacts ──────────────────────
+test.html
+test.jpg
+test.pdf
+test_tts.wav
+tmp_test.py
+tmp_*.py
+final_test.txt
+
+# ─── IDE ─────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ─── OS Files ────────────────────────────
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# ─── Temp ────────────────────────────────
+*.tmp
+*.bak
+*.orig

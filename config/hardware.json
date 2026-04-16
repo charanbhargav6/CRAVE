@@ -1,0 +1,66 @@
+{
+  "ram_gb": 16,
+  "concurrent_models": false,
+  "max_active_agents": 2,
+  "gemma_load_alone": true,
+  "ollama_host": "http://127.0.0.1:11434",
+  "ollama_models_path": "D:\\CRAVE\\Ollama\\Models",
+  "api_routing": {
+    "enabled": true,
+    "strict_privacy_mode": true,
+    "models": {
+      "gemini": "gemini-2.0-flash",
+      "gemini_reasoning": "gemini-2.5-pro",
+      "groq": "llama-3.3-70b-versatile",
+      "groq_reasoning": "deepseek-r1-distill-llama-70b",
+      "openrouter": "google/gemini-2.0-flash-lite-preview-02-05:free"
+    }
+  },
+  "models": {
+    "primary": "qwen2.5:14b",
+    "reasoning": "deepseek-r1:14b",
+    "vision": "llama3.2-vision:11b"
+  },
+  "whisper": {
+    "short_model": "small",
+    "long_model": "medium",
+    "long_threshold_seconds": 30
+  },
+  "cpu_temp_limit_celsius": 90,
+  "ollama_restart_interval_hours": 4,
+  "context_compress_every_n_messages": 50,
+  "lockdown_unlock_requires_email": true,
+  "silent_mode_hotkey": "ctrl+shift+j",
+  "wake_word": "crave",
+  "crave_root": "D:\\CRAVE",
+  "tts_engine": "edge-tts",
+  "elevenlabs_voice_id": "UgBBYS2sOqTuMpoF3BR0",
+  "face_id": {
+    "enabled": true,
+    "tolerance": 68.0,
+    "adaptive_update_threshold": 0.35,
+    "recheck_interval_minutes": 120
+  },
+  "self_evolution": {
+    "enabled": true,
+    "model_check_interval_days": 7,
+    "min_model_size_gb": 10,
+    "benchmark_judge": "gemini-2.5-pro",
+    "benchmark_fallback_judge": "local",
+    "min_benchmark_improvement": 5,
+    "old_model_grace_period_hours": 48,
+    "sandbox_dir": "D:\\CRAVE\\.sandbox",
+    "auto_revert_on_test_failure": true,
+    "confirmation_timeout_minutes": 15,
+    "otp_expiry_minutes": 5,
+    "otp_delivery": "smtp",
+    "otp_verify_channel": "telegram",
+    "coding_model_priority": [
+      "gemini",
+      "claude",
+      "openai",
+      "groq",
+      "local"
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+{
+    "filesystem": {
+        "command": "npx",
+        "args": ["-y", "@anthropic/mcp-server-filesystem", "D:\\CRAVE\\data"],
+        "description": "Sandboxed file access restricted to CRAVE data directory",
+        "env": {}
+    },
+    "fetch": {
+        "command": "npx",
+        "args": ["-y", "@anthropic/mcp-server-fetch"],
+        "description": "Fetch any URL and convert to clean markdown for LLM",
+        "env": {}
+    },
+    "memory": {
+        "command": "npx",
+        "args": ["-y", "@anthropic/mcp-server-memory"],
+        "description": "Persistent knowledge graph memory",
+        "env": {}
+    }
+}

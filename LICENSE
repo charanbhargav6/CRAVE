@@ -1,0 +1,33 @@
+CRAVE Source-Available License
+
+Copyright (c) 2026 Charan Bhargav. All rights reserved.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to use
+the Software for personal, educational, and non-commercial purposes, subject
+to the following conditions:
+
+1. PERMITTED USES:
+   - Viewing, studying, and learning from the source code.
+   - Running the Software on your own devices for personal use.
+   - Forking the repository for personal use without redistribution.
+
+2. RESTRICTIONS:
+   - You may NOT modify, adapt, or create derivative works of the Software
+     for public distribution.
+   - You may NOT redistribute the Software, modified or unmodified, without
+     prior written permission from the copyright holder.
+   - You may NOT use the Software for commercial purposes without prior
+     written permission from the copyright holder.
+
+3. ATTRIBUTION:
+   - Any permitted use must retain this license notice and give appropriate
+     credit to the original author.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
