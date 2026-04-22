@@ -41,12 +41,12 @@ def install_pentagi():
             f.write("OLLAMA_SERVER_URL=http://host.docker.internal:11434\n")
             f.write("PENTAGI_MODE=local\n")
             
-        print("\n✅ PentAGI Installation Complete.")
+        print("\n[SUCCESS] PentAGI Installation Complete.")
         print("To start PentAGI, open Docker Desktop and run the extracted installer script.")
         print("Once running on port 8000, CRAVE's ThreatDetector will automatically bridge to it.")
         
     except Exception as e:
-        print(f"\n❌ Installation failed. Please install manually or check network. Error: {e}")
+        print(f"\n[ERROR] Installation failed. Please install manually or check network. Error: {e}")
 
 if __name__ == "__main__":
     install_pentagi()

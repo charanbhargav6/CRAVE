@@ -98,7 +98,7 @@ def main():
     # 8. Cleanup
     print("[Main] Shutting down...")
     orchestrator.stop()
-    sys.exit(exit_code)
+    os._exit(0)
 
 
 if __name__ == "__main__":

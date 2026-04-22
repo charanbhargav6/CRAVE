@@ -58,13 +58,15 @@ from .audio_utils import (
     delete_file_safe, needs_medium_whisper,
 )
 
+from src.core.tts import is_speaking
+
 # ── audio constants ───────────────────────────────────────────────────────────
 SAMPLE_RATE     = 16000   # Hz — Whisper and openwakeword both want 16kHz
 CHANNELS        = 1       # mono
 SAMPLE_WIDTH    = 2       # bytes (int16)
 CHUNK_SIZE      = 512     # frames per pyaudio read
-SILENCE_THRESH  = 1200    # If amplitude drops below this, consider it silence (Raised to stop fan noise mapping)
-SILENCE_SECS    = 0.8     # How many seconds of silence means user stopped talking (Lowered to cut perceived latency)
+SILENCE_THRESH  = 1200    # Base ambient threshold
+SILENCE_SECS    = 2.5     # Increased to 2.5s to prevent dropping out mid-sentence during pauses
 MAX_RECORD_SECS = 60.0    # Hard stop indefinitely test
 
 
@@ -248,7 +250,7 @@ class VoicePipeline:
             last_awake_time = 0.0
 
             while self._running:
-                if self._silent_mode:
+                if self._silent_mode or is_speaking():
                     time.sleep(0.1)
                     continue
 
@@ -391,6 +393,9 @@ class VoicePipeline:
             max_amplitude = 0.0
 
             for _ in range(max_chunks):
+                if is_speaking():
+                    return []
+                
                 data = stream.read(CHUNK_SIZE, exception_on_overflow=False)
                 frames.append(data)
 
@@ -402,7 +407,10 @@ class VoicePipeline:
                 if amplitude > max_amplitude:
                     max_amplitude = amplitude
 
-                if amplitude < SILENCE_THRESH:
+                # Dynamic silence threshold: higher of base threshold or 15% of peak voice
+                dynamic_silence = max(SILENCE_THRESH, max_amplitude * 0.15)
+
+                if amplitude < dynamic_silence:
                     silence_chunks += 1
                 else:
                     silence_chunks = 0
@@ -434,26 +442,26 @@ class VoicePipeline:
             if use_medium:
                 if self._whisper_medium is None:
                     mdir = models_dir()
-                    print("[Voice] Loading Whisper base.en (first use — downloading if needed)...")
+                    print("[Voice] Loading Whisper small.en (first use — downloading if needed)...")
                     self._whisper_medium = WhisperModel(
+                        "small.en",
+                        device="cpu",
+                        compute_type="int8",
+                        download_root=mdir,
+                    )
+                    print("[Voice] Whisper small.en ready")
+                return self._whisper_medium
+            else:
+                if self._whisper_small is None:
+                    mdir = models_dir()
+                    print("[Voice] Loading Whisper base.en (fast processing)...")
+                    self._whisper_small = WhisperModel(
                         "base.en",
                         device="cpu",
                         compute_type="int8",
                         download_root=mdir,
                     )
                     print("[Voice] Whisper base.en ready")
-                return self._whisper_medium
-            else:
-                if self._whisper_small is None:
-                    mdir = models_dir()
-                    print("[Voice] Loading Whisper tiny.en (fast processing)...")
-                    self._whisper_small = WhisperModel(
-                        "tiny.en",
-                        device="cpu",
-                        compute_type="int8",
-                        download_root=mdir,
-                    )
-                    print("[Voice] Whisper tiny.en ready")
                 return self._whisper_small
 
     def _run_whisper(self, wav_path: str, duration_hint: float = 0.0) -> str:
@@ -474,13 +482,30 @@ class VoicePipeline:
 
             segments, _ = model.transcribe(
                 wav_path,
-                task="translate",
+                task="transcribe",
+                language="en",
                 beam_size=5,
-                vad_filter=False,
+                vad_filter=True,
+                vad_parameters=dict(min_silence_duration_ms=600),
             )
 
             parts = [seg.text.strip() for seg in segments if seg.text.strip()]
             text = " ".join(parts).strip()
+
+            # Filter common Whisper silence hallucinations
+            hallucinations = [
+                "thank you.", "thank you", "thanks for watching", "thanks for watching.",
+                "bye-bye.", "bye-bye", "bye.", "goodbye.",
+                "okay.", "okay", "yeah.", "yeah", "you", "you.",
+                "i hope you enjoyed this video", "please subscribe",
+                "like and subscribe", "see you next time",
+                "thanks for watching bye", "subscribe to my channel",
+                "the end.", "the end", "hmm.", "hmm", "uh.", "uh",
+                "so.", "so", "i mean.", "right.", "one.",
+            ]
+            if text.lower().strip().rstrip('.') in [h.rstrip('.') for h in hallucinations] or len(text) < 3:
+                print(f"[Voice] Filtered hallucination: '{text}'")
+                return ""
 
             # If medium was not pre-selected but result contains tech keywords,
             # re-transcribe with medium for better accuracy (only if quick run)
@@ -489,9 +514,11 @@ class VoicePipeline:
                 model = self._get_whisper(use_medium=True)
                 segments, _ = model.transcribe(
                     wav_path,
-                    task="translate",
+                    task="transcribe",
+                    language="en",
                     beam_size=5,
-                    vad_filter=False,
+                    vad_filter=True,
+                    vad_parameters=dict(min_silence_duration_ms=600),
                 )
                 parts = [seg.text.strip() for seg in segments if seg.text.strip()]
                 text = " ".join(parts).strip()

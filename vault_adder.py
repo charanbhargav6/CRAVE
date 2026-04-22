@@ -16,11 +16,18 @@ from src.security.encryption import crypto_manager
 
 def securely_add_keys():
     # 1. Add your real keys here!
-    my_new_keys = {
-        "ALPACA_API_KEY": "YOUR_REAL_ALPACA_KEY_HERE",
-        "ALPACA_SECRET_KEY": "YOUR_REAL_ALPACA_SECRET_HERE",
+    #my_new_keys = {
+        #"ALPACA_API_KEY": "YOUR_REAL_ALPACA_KEY_HERE",
+        #"ALPACA_SECRET_KEY": "YOUR_REAL_ALPACA_SECRET_HERE",
         # "BINANCE_API_KEY": "YOUR_BINANCE_KEY_HERE"
+    #}
+
+    my_new_keys = {
+        "SUPABASE_URL": "",
+        "SUPABASE_ANON_KEY": "",
+        "SUPABASE_SERVICE_KEY": ""
     }
+
     
     # 2. Decrypt the current Vault back to a plaintext .env file temporarily
     if os.path.exists("data/vault/.env.enc"):

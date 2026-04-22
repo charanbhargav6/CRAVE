@@ -538,6 +538,15 @@ class CRAVEOrb(QMainWindow):
             self._save_position()
             event.accept()
 
+    def closeEvent(self, event):
+        self._save_position()
+        if self._orchestrator:
+            self._orchestrator.stop()
+        if hasattr(self, '_tray_icon') and self._tray_icon:
+            self._tray_icon.hide()
+        event.accept()
+        QApplication.quit()
+
     def _save_position(self):
         try:
             os.makedirs(os.path.dirname(SETTINGS_FILE), exist_ok=True)

@@ -287,14 +287,25 @@ class FaceIDDaemon:
 
     def start(self):
         if not self._config.get("enabled", True):
+            print("[FaceID] ⚠️ Disabled in config (face_id.enabled = false)")
+            logger.warning("[FaceID] Disabled in hardware.json config")
             return
 
-        if not _CV2 or not os.path.exists(MODEL_PATH):
+        if not _CV2:
+            print("[FaceID] ⚠️ opencv-contrib-python not installed. Run: pip install opencv-contrib-python")
+            logger.warning("[FaceID] Cannot start — cv2 not available")
+            return
+
+        if not os.path.exists(MODEL_PATH):
+            print(f"[FaceID] ⚠️ No enrolled face model found at {MODEL_PATH}")
+            print("[FaceID]    Run: python -m src.security.face_id --enroll")
+            logger.warning(f"[FaceID] Model file not found: {MODEL_PATH}")
             return
 
         self._running = True
         self._thread = threading.Thread(target=self._loop, daemon=True, name="FaceIDDaemon")
         self._thread.start()
+        print("[FaceID] ✅ Daemon started — checking face on boot...")
 
     def stop(self):
         self._running = False

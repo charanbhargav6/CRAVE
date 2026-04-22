@@ -52,66 +52,165 @@ INTENT_SELF_MODIFY = "self_modify"
 INTENT_SCOUT    = "scout"
 INTENT_AUTOMATE = "automate"
 INTENT_UNKNOWN  = "unknown"
+INTENT_PUBLIC_API = "public_api"
 
-# ── keyword maps for intent classification ────────────────────────────────────
+# ── keyword maps for FAST-PATH intent classification (fallback) ───────────────
+# These are checked FIRST for instant routing (~0ms).
+# If no strong match is found, the LLM classifier takes over.
 
 _INTENT_KEYWORDS = {
     INTENT_SCREEN:  ["analyze screen", "analyze my screen", "what's on screen", "look at screen",
                      "what do you see", "screenshot", "read screen",
                      "what is on my screen"],
-    INTENT_FILE:    ["generate", "create", "make", "write", "build",
-                     "ppt", "powerpoint", "presentation", "document",
-                     "word doc", "excel", "spreadsheet", "pdf", "report"],
-    INTENT_LEARN:   ["learn", "study", "research", "find out about",
-                     "teach me", "what is", "explain", "how does", "tell me about"],
+    INTENT_FILE:    ["create a file", "create file", "generate a file", "generate file",
+                     "write a file", "write file", "save a file", "save to file",
+                     "make a file", "make file", "create a script", "write a script",
+                     "generate a script", "make a script",
+                     "create a document", "write a document",
+                     "make a ppt", "make a powerpoint", "create a presentation",
+                     "make a presentation", "generate a presentation",
+                     "write a report", "create a report", "generate a report",
+                     "create an excel", "make a spreadsheet", "generate a spreadsheet",
+                     "make a pdf", "create a pdf", "generate a pdf"],
     INTENT_TRADE:   ["trade", "trading", "buy", "sell", "long", "short",
                      "forex", "crypto", "stock", "market", "position",
                      "close all", "kill switch", "pause trading",
                      "backtest", "back test"],
-    INTENT_HACK:    ["nmap", "scan", "exploit", "ctf", "flag", "kali",
+    INTENT_HACK:    ["nmap", "exploit", "ctf", "flag", "kali",
                      "pentest", "hack", "vulnerability", "payload"],
     INTENT_SILENT:  ["silent mode", "go silent", "quiet mode", "mute"],
-    INTENT_STATUS:  ["status", "are you running",
+    INTENT_STATUS:  ["system status", "are you running",
                      "system check", "what phase"],
-    INTENT_STOP:    ["stop", "shutdown", "exit", "quit", "turn off"],
-    INTENT_AUTH:    ["keyword verification", "voice authentication", "authorize voice", "verbal password", "clearance phrase"],
+    INTENT_STOP:    ["shutdown", "exit", "quit", "turn off"],
+    INTENT_AUTH:    ["keyword verification", "voice authentication", "authorize voice",
+                     "verbal password", "clearance phrase"],
     INTENT_SYSTEM:  ["open ", "launch ", "start application", "close ", "kill app"],
-    INTENT_MESSAGE: ["email", "send email", "mail", "whatsapp", "send whatsapp", "text", "message someone"],
+    INTENT_MESSAGE: ["send email", "send whatsapp", "message someone"],
     INTENT_EXPLAIN: ["why did you", "explain yourself", "what was your reasoning",
-                     "why was that", "explain your decision", "what made you",
-                     "justify that", "reasoning log", "explain last action"],
-    INTENT_EVOLVE:  ["upgrade yourself", "check for updates", "new models", 
+                     "explain your decision", "reasoning log", "explain last action"],
+    INTENT_EVOLVE:  ["upgrade yourself", "check for updates",
                      "upgrade model", "find a better model", "benchmark models"],
     INTENT_SELF_MODIFY: ["add feature", "modify yourself", "implement this",
                          "add a feature", "change your code", "write a new feature"],
     INTENT_SCOUT: ["research github", "find improvements", "scout llm", "scout repos",
                    "trending llm", "research llm", "find new models", "huggingface trending",
                    "what's new in ai", "research ai improvements", "find better techniques"],
-    INTENT_AUTOMATE: ["in trading view", "in telegram", "in twitter", "in insta", "in whatsapp",
-                      "draw resistance", "draw support", "click on", "macro ", "automate "],
-    "youtube": ["youtube", "shorts", "make a video about", "create a video", "youtube video"],
+    INTENT_AUTOMATE: ["in trading view", "draw resistance", "draw support",
+                      "click on", "macro ", "automate "],
+    "youtube": ["youtube shorts", "make a video about", "create a video", "youtube video"],
     INTENT_VIDEO: ["capcut", "edit video", "ffmpeg", "cut video", "subtitle video"],
+    INTENT_PUBLIC_API: ["fetch price", "crypto price", "random fact", "tell me a fact",
+                        "what is my ip", "network recon", "tell me a joke", "crack a joke",
+                        "crack me a joke", "say a joke", "give me a joke",
+                        "ipl score", "cricket score", "live score", "match score",
+                        "football score", "sports score", "game score", "the score",
+                        "weather", "what's the weather", "temperature outside", "what is the weather",
+                        "stock price", "bitcoin price", "gold price",
+                        "current price", "market price",
+                        # Universal real-world queries (Stage 2 web search)
+                        "petrol price", "fuel price", "gas price", "diesel price",
+                        "latest news", "what happened", "results of", "who won",
+                        "any events", "major events", "happening today", "happening right now",
+                        "war update", "election result", "ipl match", "matches today",
+                        "current situation", "what are the", "how much is", "what is the price"],
 }
+
+# ── Post-Transcription Voice Fuzzy Correction ──────────────────────────────────
+# Catches common Whisper mishearings of proper nouns, app names, and websites.
+# Applied BEFORE intent classification in handle().
+
+_VOICE_CORRECTIONS = {
+    # Websites / Apps
+    "creepers": "cricbuzz",
+    "crick buzz": "cricbuzz",
+    "cric buzz": "cricbuzz",
+    "crick bus": "cricbuzz",
+    "trick buzz": "cricbuzz",
+    "trade in view": "tradingview",
+    "trading you": "tradingview",
+    "what's up": "whatsapp",
+    "what sup": "whatsapp",
+    "watts app": "whatsapp",
+    "what sap": "whatsapp",
+    "get hub": "github",
+    "git up": "github",
+    "chat GPD": "chatgpt",
+    "chat gbd": "chatgpt",
+    "chatgbd": "chatgpt",
+    "you tube": "youtube",
+    "new tube": "youtube",
+    # Common word manglings
+    "i peel": "ipl",
+    "i p l": "ipl",
+    "ip el": "ipl",
+    "eye peel": "ipl",
+    "eye pl": "ipl",
+}
+
+# ── LLM Intent Classification System Prompt ───────────────────────────────────
+# This is sent to the fast-path LLM (Groq/Gemini/Ollama) to classify intent.
+# Engineered to generate exactly ONE token.
+
+_LLM_INTENT_PROMPT = """You are CRAVE's intent router. Classify the user's voice command into EXACTLY ONE of these categories.
+
+CATEGORIES:
+- chat: General conversation, greetings, opinions, chitchat, questions about concepts/theory that do NOT need live data
+- screen: User wants you to look at / analyze their screen or screenshot
+- file: User explicitly wants to CREATE, WRITE, or SAVE a file, document, script, presentation, or spreadsheet
+- learn: User wants to learn, study, research, or get a detailed explanation about a topic (educational)
+- trade: Anything about trading, forex, crypto, stocks, buying/selling financial instruments, backtesting
+- hack: Penetration testing, nmap, exploits, CTF, Kali Linux, cybersecurity attacks
+- silent: Toggle silent/quiet/mute mode
+- status: System status check
+- stop: Shutdown, exit, quit the system
+- auth: Voice authentication, unlock, clearance phrase
+- system: Open, launch, close, or kill an application or website
+- message: Send an email, WhatsApp, or Telegram message to someone
+- explain: User asks why CRAVE made a decision or wants reasoning logs
+- evolve: Upgrade models, check for updates, benchmark
+- self_modify: User wants CRAVE to add a feature or modify its own code
+- scout: Research new AI models, GitHub repos, HuggingFace trending
+- automate: GUI automation, macros, TradingView drawing, clicking, mouse control
+- youtube: Create or upload YouTube videos or shorts
+- video: Edit video with CapCut or FFmpeg (not YouTube creation)
+- public_api: ANY question that requires CURRENT, LIVE, or REAL-TIME information from the internet. This includes: weather, sports scores, match schedules, cricket, IPL, football, prices (petrol, gold, stocks, crypto), current events, news, war updates, election results, "what happened today", "is there any", event schedules, any factual question that changes over time. Also: jokes, facts, IP lookup.
+
+RULES:
+1. Output ONLY the category name. Nothing else. No explanation. No punctuation.
+2. If the user asks about ANYTHING that could change daily (scores, prices, news, events, results, schedules), ALWAYS choose "public_api"
+3. If the user asks to open or launch something, ALWAYS choose "system"
+4. If the question is about a fact or concept that doesn't change ("what is gravity", "explain python"), use "chat" or "learn"
+5. If unclear, default to "chat"
+
+USER COMMAND: """
 
 
 def classify_intent(text: str) -> str:
     """
-    Classify a command string into one of the intent categories.
-    Simple keyword matching — good enough for Phase 4.
-    Phase 9 self-learning will improve this with embeddings.
+    FAST-PATH keyword classifier. Used as fallback when LLM is unavailable.
+    The Orchestrator will prefer _classify_intent_llm() when the router is ready.
     """
     lower = text.lower().strip()
     if not lower:
         return INTENT_UNKNOWN
 
-    # Special case priority: if it starts with "open", it's always SYSTEM
-    if lower.startswith("open ") or lower.startswith("launch "):
+    # Special case priority: if it contains "open ", it's always SYSTEM
+    # Prevent hacking context false-positives (e.g. "scan open ports")
+    if (" open " in f" {lower} " or " launch " in f" {lower} ") and "port" not in lower:
         return INTENT_SYSTEM
+
+    # Find ALL matching intents and their longest matching keyword
+    best_intent = None
+    best_keyword_len = 0
 
     for intent, keywords in _INTENT_KEYWORDS.items():
         for kw in keywords:
-            if kw in lower:
-                return intent
+            if kw in lower and len(kw) > best_keyword_len:
+                best_intent = intent
+                best_keyword_len = len(kw)
+
+    if best_intent:
+        return best_intent
 
     return INTENT_CHAT  # default: treat as normal conversation
 
@@ -175,6 +274,15 @@ class Orchestrator:
         self._voice   = None
         self._telegram = None
         self._scheduler = None
+        self._last_tool_params = {}  # Tool-call extracted params
+
+        # Neural Memory — persistent across restarts
+        try:
+            from src.core.neural_memory import get_neural_memory
+            self._memory = get_neural_memory()
+        except Exception as e:
+            self._memory = None
+            print(f"[Orchestrator] NeuralMemory init skipped: {e}")
 
         # Orb UI callbacks (set by Phase 6 Orb via set_callbacks)
         self._cb_state_change     = None  # fn(state: str)
@@ -279,11 +387,23 @@ class Orchestrator:
         except Exception as e:
             print(f"[Orchestrator] Threat Detector boot skipped: {e}")
 
+        # Start a new Neural Memory session
+        if self._memory:
+            self._session_id = self._memory.start_session(project="CRAVE")
+            self._memory.log("milestone", "CRAVE system booted successfully")
+
         speak_startup()
         print("[Orchestrator] Running — say 'Hey CRAVE' or type a command")
 
     def stop(self):
         """Gracefully shut down all systems."""
+        # Auto-save neural memory session before shutdown
+        if self._memory:
+            try:
+                self._memory.auto_save_session(self._context, "Graceful shutdown")
+            except Exception as e:
+                print(f"[Orchestrator] Memory save failed: {e}")
+
         self._running = False
         tts_stop()
         if self._voice:
@@ -291,6 +411,88 @@ class Orchestrator:
         if self._loop_thread:
             self._loop_thread.join(timeout=3)
         print("[Orchestrator] Stopped")
+
+    # ── LLM Tool-Calling Router (Agentic AI Architecture) ──────────────────
+    # Replaces the old keyword→intent classifier with true LLM understanding.
+    # The LLM reads the user's message (even with typos) and decides which
+    # tool to call, just like Claude, Gemini, and Claw do.
+
+    # Maps tool names from tool_router.py → old intent strings for handler lookup
+    _TOOL_TO_INTENT = {
+        "chat":           INTENT_CHAT,
+        "create_file":    INTENT_FILE,
+        "open_app":       INTENT_SYSTEM,
+        "close_app":      INTENT_SYSTEM,
+        "web_search":     INTENT_PUBLIC_API,
+        "screen_analyze": INTENT_SCREEN,
+        "send_message":   INTENT_MESSAGE,
+        "trading":        INTENT_TRADE,
+        "system_command":  INTENT_SYSTEM,
+        "generate_image": INTENT_FILE,
+        "video_edit":     INTENT_VIDEO,
+        "hack_pentest":   INTENT_HACK,
+        "silent_mode":    INTENT_SILENT,
+        "system_status":  INTENT_STATUS,
+        "shutdown":       INTENT_STOP,
+        "self_modify":    INTENT_SELF_MODIFY,
+        "automate_gui":   "automate",
+        "download_file":  "download",
+        "resume_session": "resume",
+        "refine_content": "refine",
+    }
+
+    _VALID_INTENTS = {
+        "chat", "screen", "file", "learn", "trade", "hack", "silent",
+        "status", "stop", "auth", "system", "message", "explain",
+        "evolve", "self_modify", "scout", "automate", "youtube",
+        "video", "public_api", "unknown",
+    }
+
+    def _tool_call_llm(self, text: str) -> dict:
+        """
+        Agentic Tool-Calling Router.
+        Sends the user's message to the LLM with tool definitions.
+        The LLM returns a JSON tool call — no keyword matching needed.
+        Returns: {"tool": "tool_name", "params": {...}}
+        Falls back to keyword classifier if LLM fails.
+        """
+        if not self._router:
+            intent = classify_intent(text)
+            return {"tool": intent, "params": {}}
+
+        try:
+            import time as _time
+            from src.core.tool_router import TOOL_ROUTER_PROMPT, parse_tool_response
+
+            start = _time.time()
+            res = self._router.chat(
+                prompt=text,
+                system_prompt=TOOL_ROUTER_PROMPT,
+                task_type="primary",
+                options={"num_predict": 150, "temperature": 0.0},
+            )
+            elapsed = _time.time() - start
+            raw = res.get("response", "")
+
+            tool_call = parse_tool_response(raw)
+            print(f"[Orchestrator] Tool Call: {tool_call['tool']} | Params: {tool_call.get('params', {})} ({elapsed:.2f}s via {res.get('model', '?')})")
+            return tool_call
+
+        except Exception as e:
+            print(f"[Orchestrator] Tool call failed ({e}), using keyword fallback")
+            intent = classify_intent(text)
+            return {"tool": intent, "params": {}}
+
+    def _classify_intent_llm(self, text: str) -> str:
+        """
+        Legacy compatibility wrapper.
+        Internally uses tool-calling, maps result to old intent string.
+        """
+        tool_call = self._tool_call_llm(text)
+        tool_name = tool_call.get("tool", "chat")
+        # Store params on the instance for the handler to use
+        self._last_tool_params = tool_call.get("params", {})
+        return self._TOOL_TO_INTENT.get(tool_name, INTENT_CHAT)
 
     def handle(self, text: str, source: str = "local") -> str:
         """
@@ -310,12 +512,20 @@ class Orchestrator:
 
         text = text.strip()
         
+        # ── Voice Fuzzy Correction: fix common Whisper mishearings ────────
+        text_lower = text.lower()
+        for wrong, correct in _VOICE_CORRECTIONS.items():
+            if wrong in text_lower:
+                text = text_lower.replace(wrong, correct)
+                print(f"[Orchestrator] Voice correction: '{wrong}' → '{correct}'")
+                break  # only apply one correction to avoid chain mangling
+        
         # Phase 8.1 Safety: Constrain Input Tokens to prevent Ollama overflow
         if len(text) > 15000:
             print(f"[Orchestrator] Input exceeded 15k limit ({len(text)}). Truncating.")
             text = text[:15000] + "\n...[TRUNCATED BY CRAVE]"
             
-        intent = classify_intent(text)
+        intent = self._classify_intent_llm(text)
         
         # Phase 10: Multi-Step Task Chaining Override
         # If it's heavily chained ("and", "then"), route to the GUI/Task Planner instead
@@ -576,9 +786,189 @@ class Orchestrator:
             INTENT_EVOLVE:  self._handle_evolve,
             INTENT_SELF_MODIFY: self._handle_self_modify,
             INTENT_SCOUT: self._handle_scout,
+            INTENT_PUBLIC_API: self._handle_public_api,
+            "download":    self._handle_download,
+            "resume":      self._handle_resume,
+            "refine":      self._handle_refine,
             INTENT_UNKNOWN: self._handle_chat,
         }
         return handlers.get(intent, self._handle_chat)
+
+    # ── Resume Session Handler (Neural Memory) ───────────────────────────
+
+    def _handle_resume(self, state: dict) -> str:
+        """
+        'Where did we stop?' — Recalls last session with 2-3 bullet points
+        and reopens recent tabs/files.
+        """
+        if not self._memory:
+            return "Neural Memory system is not available."
+
+        brief = self._memory.generate_resume_brief()
+        tabs = self._memory.get_recent_tabs()
+
+        # Reopen recent tabs/files
+        if tabs:
+            import os, subprocess
+            reopened = []
+            for tab in tabs[:5]:  # Max 5 tabs
+                try:
+                    if tab.startswith("http"):
+                        os.startfile(tab)
+                    elif os.path.exists(tab):
+                        os.startfile(tab)
+                    reopened.append(tab)
+                except Exception:
+                    pass
+            if reopened:
+                brief += f"\n\nReopened {len(reopened)} recent tabs."
+
+        return brief
+
+    # ── File Download Handler (L3 Security Gate) ─────────────────────────
+
+    def _handle_download(self, state: dict) -> str:
+        """
+        Download files from the internet. .exe/.msi require L3 clearance.
+        """
+        params = getattr(self, '_last_tool_params', {})
+        url = params.get("url", "")
+        filename = params.get("filename", "")
+        save_location = params.get("save_location", "downloads")
+
+        if not url:
+            # Try to extract URL from the raw command
+            import re
+            urls = re.findall(r'https?://\S+', state["command"])
+            if urls:
+                url = urls[0]
+            else:
+                return "I need a URL to download from. Please include the download link."
+
+        # Extract filename from URL if not provided
+        if not filename:
+            from urllib.parse import urlparse
+            parsed = urlparse(url)
+            filename = os.path.basename(parsed.path) or "download"
+
+        # Security gate: .exe, .msi, .bat, .ps1 require L3
+        DANGEROUS_EXTS = {'.exe', '.msi', '.bat', '.ps1', '.cmd', '.com', '.scr', '.vbs'}
+        _, ext = os.path.splitext(filename.lower())
+
+        if ext in DANGEROUS_EXTS:
+            from src.security.rbac import get_rbac
+            rbac = get_rbac()
+            if rbac.auth_level < 3:
+                return (f"⚠️ SECURITY: Downloading executable files ({ext}) requires L3 clearance. "
+                        f"Current level: L{rbac.auth_level}. Please authenticate to L3 first.")
+
+        # Resolve save path
+        from src.core.tool_router import resolve_save_path
+        filepath = resolve_save_path(filename, save_location)
+
+        # Download with progress
+        speak(f"Downloading {filename}. Please wait.")
+
+        try:
+            import requests
+            response = requests.get(url, stream=True, timeout=60,
+                                     headers={"User-Agent": "CRAVE/10.3"})
+            response.raise_for_status()
+
+            total = int(response.headers.get('content-length', 0))
+            downloaded = 0
+
+            os.makedirs(os.path.dirname(filepath), exist_ok=True)
+            with open(filepath, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+                    downloaded += len(chunk)
+
+            size_mb = downloaded / (1024 * 1024)
+
+            # Log to neural memory
+            if self._memory:
+                self._memory.log("file", f"Downloaded: {filename} ({size_mb:.1f}MB)", 
+                                {"url": url, "path": filepath})
+
+            return f"✅ Download complete!\n📄 {filename} ({size_mb:.1f} MB)\n📁 Saved at: {filepath}"
+        except Exception as e:
+            return f"❌ Download failed: {e}"
+
+    # ── GAN Refiner Handler ──────────────────────────────────────────────
+
+    def _handle_refine(self, state: dict) -> str:
+        """
+        Generator-Evaluator quality loop. Two AIs compete:
+        Generator writes → Evaluator scores → Generator rewrites. 3 rounds.
+        Evaluator has NO memory between rounds.
+        """
+        params = getattr(self, '_last_tool_params', {})
+        task = params.get("task", state["command"])
+        rubric = params.get("rubric", "Clear, professional, well-structured, concise, error-free")
+
+        if not self._router:
+            return "Router not ready for content refinement."
+
+        speak("Running quality refinement loop. Generator and Evaluator competing. Stand by.")
+
+        from src.core.gan_refiner import refine
+        result = refine(
+            task=task,
+            rubric=rubric,
+            router=self._router,
+            rounds=3,
+            pass_threshold=8,
+        )
+
+        scores = result.get("scores", [])
+        rounds_used = result.get("rounds_used", 0)
+        passed = result.get("passed", False)
+        final = result.get("final_output", "")
+
+        verdict = "PASSED ✅" if passed else "DID NOT PASS ❌"
+        score_str = " → ".join([str(s) for s in scores])
+
+        summary = (
+            f"🔄 GAN Refiner: {rounds_used} rounds | Scores: {score_str} | {verdict}\n\n"
+            f"{final}"
+        )
+
+        # Log to neural memory
+        if self._memory:
+            self._memory.log("decision", f"GAN Refiner: {rounds_used}R, scores={scores}, passed={passed}")
+
+        return summary
+
+    def _handle_public_api(self, state: dict) -> str:
+        """Universal internet intelligence handler.
+        Speaks contextual acknowledgement, then fetches real-time data."""
+        self._notify_state("thinking")
+        cmd = state["command"]
+        
+        # ── Contextual acknowledgement: "Let me look up about [task]" ─────
+        # Extract the core topic for a natural-sounding acknowledgement
+        topic = cmd.strip()
+        # Strip common prefixes so we get just the subject
+        for prefix in ["what are the", "what is the", "are there any", "is there any",
+                       "tell me about", "show me", "check", "find", "get me",
+                       "what are", "what is", "how much", "how many", "any",
+                       "give me", "fetch", "look up", "search for", "search"]:
+            if topic.lower().startswith(prefix):
+                topic = topic[len(prefix):].strip()
+                break
+        topic = topic.rstrip("?.!").strip() or cmd
+        
+        speak(f"Let me look up about {topic}.")
+        
+        from src.agents.public_api_agent import PublicApiAgent
+        agent = PublicApiAgent(orchestrator=self)
+        try:
+            return agent.handle_request(cmd)
+        except Exception as e:
+            import logging
+            logging.getLogger("crave.orchestrator").error(f"Public API Agent failed: {e}")
+            return f"I tried to look up {topic} but hit an error. Try rephrasing your question."
 
     def _handle_message(self, state: dict) -> str:
         """Parses message intent. Defaults to WhatsApp unless email/telegram is specified."""
@@ -692,6 +1082,19 @@ class Orchestrator:
                 "youtube": "https://youtube.com",
                 "github": "https://github.com",
                 "chatgpt": "https://chatgpt.com",
+                "cricbuzz": "https://cricbuzz.com",
+                "google": "https://google.com",
+                "espn": "https://espn.com",
+                "stackoverflow": "https://stackoverflow.com",
+                "stack overflow": "https://stackoverflow.com",
+                "reddit": "https://reddit.com",
+                "twitter": "https://x.com",
+                "instagram": "https://instagram.com",
+                "linkedin": "https://linkedin.com",
+                "amazon": "https://amazon.in",
+                "flipkart": "https://flipkart.com",
+                "netflix": "https://netflix.com",
+                "spotify": "https://spotify.com",
             }
             
             # Smart substring matching (e.g. "trading view in silent mode" -> "trading view")
@@ -802,70 +1205,156 @@ class Orchestrator:
 
     def _handle_file(self, state: dict) -> str:
         """
-        File generation — fully implemented for text/code files.
-        Extracts intended filename and content via LLM and writes to disk.
+        File generation — creates files directly on disk at the user-specified location.
+        Uses tool-call params (filename, save_location, description) extracted by the
+        agentic tool router. Falls back to LLM extraction if params are missing.
+        
+        FIXED (v10.3): Files now save to user's Desktop/Documents/specified path
+        instead of hardcoded D:/CRAVE/data/generated_files/.
         """
         cmd = state["command"]
-        sys_over = (
-            "You are CRAVE. The user wants to create a file based on their prompt. "
-            "Determine an appropriate filename (e.g. script.py, report.md, notes.txt) and write the content. "
-            "Respond EXACTLY in the following JSON format: {\"filename\": \"your_filename_here\", \"content\": \"file_content_here\"}"
-        )
-        if not self._router:
-            return "Router not ready for file creation."
-
-        res = self._router.chat(
-            prompt=cmd,
-            system_prompt=sys_over,
-            task_type="reasoning"  # Reasoning models usually output better code/json
-        )
+        import json, os
+        from src.core.tool_router import resolve_save_path
         
-        reply_str = res.get("response", "")
-        import json
-        import os
+        # ── Step 1: Get file metadata from tool-call params ──────────────
+        params = getattr(self, '_last_tool_params', {})
+        filename = params.get("filename", "")
+        save_location = params.get("save_location", "desktop")
+        description = params.get("description", cmd)
         
-        # Clean potential markdown wrap
-        if reply_str.startswith("```json"):
-            reply_str = reply_str.replace("```json\n", "", 1)
-            reply_str = reply_str.replace("```", "")
+        # ── Step 2: If tool-call didn't extract params, ask LLM to extract ─
+        if not filename:
+            sys_over = (
+                "You are CRAVE. The user wants to create a file. "
+                "Extract the details and respond ONLY with this exact JSON format:\n"
+                '{"filename": "name.ext", "save_location": "desktop", "content": "file content here"}\n\n'
+                "RULES:\n"
+                '- filename: the file name with extension (e.g. notes.txt, script.py)\n'
+                '- save_location: "desktop", "documents", "downloads", or an absolute path. Default: "desktop"\n'
+                '- content: the actual file content to write\n'
+                '- If user says "desktop" or "on my desktop", save_location = "desktop"\n'
+                '- If user says "save in D:\\project", save_location = "D:\\project"'
+            )
+            if not self._router:
+                return "Router not ready for file creation."
             
+            res = self._router.chat(
+                prompt=cmd,
+                system_prompt=sys_over,
+                task_type="reasoning"
+            )
+            
+            reply_str = res.get("response", "")
+            # Clean markdown wrapping
+            if "```json" in reply_str:
+                reply_str = reply_str.split("```json")[1].split("```")[0].strip()
+            elif "```" in reply_str:
+                reply_str = reply_str.split("```")[1].split("```")[0].strip()
+            
+            # Find JSON in response
+            start_idx = reply_str.find("{")
+            end_idx = reply_str.rfind("}") + 1
+            if start_idx >= 0 and end_idx > start_idx:
+                reply_str = reply_str[start_idx:end_idx]
+            
+            try:
+                data = json.loads(reply_str)
+                filename = data.get("filename", "generated_file.txt")
+                save_location = data.get("save_location", "desktop")
+                content = data.get("content", "")
+            except json.JSONDecodeError:
+                return "I couldn't understand the file details. Please try: 'create a file named X.txt on desktop with content Y'"
+        else:
+            # Tool-call gave us params — now generate the content via LLM
+            content_prompt = (
+                f"Generate the content for a file named '{filename}'.\n"
+                f"User's request: {description}\n\n"
+                "Output ONLY the raw file content. No explanations, no markdown wrapping, no JSON."
+            )
+            if self._router:
+                res = self._router.chat(
+                    prompt=content_prompt,
+                    system_prompt="You are a file content generator. Output only raw file content.",
+                    task_type="reasoning"
+                )
+                content = res.get("response", "")
+            else:
+                content = ""
+        
+        # ── Step 3: Write the file to the correct location ───────────────
+        filepath = resolve_save_path(filename, save_location)
+        
+        # Security check: prevent writing to vault
+        from src.agents.file_agent import _is_vault_path
+        if _is_vault_path(filepath):
+            return "ERROR: Cannot write to protected vault directory."
+        
         try:
-            data = json.loads(reply_str)
-            filename = data.get("filename", "generated_file.txt")
-            content = data.get("content", "")
+            os.makedirs(os.path.dirname(filepath), exist_ok=True)
             
-            save_dir = os.path.join(crave_root(), "data", "generated_files")
-            os.makedirs(save_dir, exist_ok=True)
+            # Format-specific generation
+            ext = os.path.splitext(filepath)[1].lower()
             
-            filepath = os.path.join(save_dir, filename)
-            with open(filepath, "w", encoding="utf-8") as f:
-                f.write(content)
+            if ext == '.docx':
+                from docx import Document
+                doc = Document()
+                doc.add_heading(filename.replace(".docx", "").replace("_", " ").title(), 0)
+                # Split content into paragraphs
+                for para in content.split('\n\n'):
+                    if para.strip():
+                        doc.add_paragraph(para.strip())
+                doc.save(filepath)
                 
-            return f"Successfully created file: {filename}\nSaved at: {filepath}"
-        except json.JSONDecodeError:
-            # Fallback if the LLM didn't return valid JSON
-            return "Failed to parse file generation payload properly. Please try being more specific."
+            elif ext == '.pdf':
+                from reportlab.lib.pagesizes import letter
+                from reportlab.pdfgen import canvas
+                from reportlab.lib.utils import simpleSplit
+                c = canvas.Canvas(filepath, pagesize=letter)
+                width, height = letter
+                
+                c.setFont("Helvetica", 12)
+                y = height - 50
+                for para in content.split('\n\n'):
+                    if not para.strip(): continue
+                    # Rough text wrapping
+                    lines = simpleSplit(para.strip(), "Helvetica", 12, width - 100)
+                    for line in lines:
+                        if y < 50:
+                            c.showPage()
+                            c.setFont("Helvetica", 12)
+                            y = height - 50
+                        c.drawString(50, y, line)
+                        y -= 15
+                    y -= 10 # paragraph spacing
+                c.save()
+            else:
+                # Default text generation
+                with open(filepath, "w", encoding="utf-8") as f:
+                    f.write(content)
+                    
+            # Log to neural memory
+            if self._memory:
+                self._memory.log("file", f"Created document: {filename}", {"path": filepath})
+                
+            return f"File created successfully!\n📄 {filename}\n📁 Saved at: {filepath}"
+        except Exception as e:
+            return f"Failed to create file: {e}"
 
     def _handle_video(self, state: dict) -> str:
         """
-        Routes video manipulation requests natively to FFmpeg or CapCut Agents.
+        Routes video manipulation requests to FFmpeg Agent.
+        CapCut agent removed (v10.3) — GUI hijacking was unreliable.
         """
         cmd = state["command"].lower()
         
-        if "capcut" in cmd:
-            from src.agents.capcut_agent import CapCutAgent
-            agent = CapCutAgent()
-            self._notify_state("speaking")
-            from .tts import speak
-            speak("Initiating CapCut physical UI hijack. Do not touch your mouse.")
-            # Trigger basic export script
-            result = agent.export_stylized_video("auto", [])
-            return result
-        else:
-            # Default to FFmpeg headless
-            return ("FFmpeg pipeline active. "
-                    "I am standing by for specific timestamps or video file coordinates "
-                    "to rapidly inject mathematical cuts or subtitles.")
+        # YouTube video creation
+        if any(kw in cmd for kw in ["youtube", "shorts", "upload"]):
+            return self._handle_youtube(state)
+        
+        # Default to FFmpeg headless
+        return ("FFmpeg pipeline active. "
+                "I am standing by for specific timestamps or video file coordinates "
+                "to rapidly inject mathematical cuts or subtitles.")
 
     def _handle_learn(self, state: dict) -> str:
         """

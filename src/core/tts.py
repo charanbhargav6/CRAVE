@@ -87,15 +87,17 @@ class KokoroTTSEngine(TTSEngine):
     def __init__(self):
         try:
             from kokoro_onnx import Kokoro
-            self._kokoro = Kokoro.from_pretrained()
+            if not os.path.exists("kokoro-v0_19.onnx") or not os.path.exists("voices.json"):
+                raise FileNotFoundError("Local model files ('kokoro-v0_19.onnx' / 'voices.json') not found.")
+            self._kokoro = Kokoro("kokoro-v0_19.onnx", "voices.json")
             self._available = True
-            logger.info("[TTS] Kokoro ONNX engine loaded.")
+            logger.info("[TTS] Kokoro ONNX offline engine loaded.")
         except ImportError:
             self._available = False
             logger.warning("[TTS] kokoro-onnx not installed.")
         except Exception as e:
             self._available = False
-            logger.warning(f"[TTS] Kokoro init failed: {e}")
+            logger.debug(f"[TTS] Kokoro offline TTS not initialized: {e}")
 
     def name(self) -> str:
         return "kokoro"
@@ -296,7 +298,7 @@ def _play_audio_file(filepath: str):
 
 
 def _speak_blocking(text: str):
-    """Generate and play audio with fallback chain. Runs in a background thread."""
+    """Generate and play audio in streaming chunks to reduce latency."""
     global _speaking
 
     engine = _get_engine()
@@ -306,44 +308,60 @@ def _speak_blocking(text: str):
 
     _speaking = True
 
-    # Try primary engine first, then fallbacks
+    # ── Streaming Chunk Logic ──
+    # Split text by periods, exclamation marks, or newlines to stream playback
+    import re
+    # Match sentences, keeping punctuation
+    chunks = re.findall(r'[^.!?\n]+[.!?\n]*', text)
+    chunks = [c.strip() for c in chunks if c.strip()]
+    
+    if not chunks:
+        _speaking = False
+        return
+
     engines_to_try = [engine] + _fallback_engines
     
-    for eng in engines_to_try:
-        # pyttsx3 speaks directly — no file generation needed
-        if isinstance(eng, Pyttsx3TTSEngine):
-            try:
-                success = eng.generate(text, "")  # output_path unused
-                if success:
-                    _speaking = False
-                    return
-            except Exception:
-                continue
+    for chunk in chunks:
+        if not _speaking:
+            break  # Stop if interrupted
+            
+        chunk_success = False
         
-        suffix = ".mp3" if isinstance(eng, EdgeTTSEngine) else ".wav"
-        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
-        temp_path = temp_file.name
-        temp_file.close()
+        for eng in engines_to_try:
+            # pyttsx3 speaks directly
+            if isinstance(eng, Pyttsx3TTSEngine):
+                try:
+                    if eng.generate(chunk, ""):
+                        chunk_success = True
+                        break
+                except Exception:
+                    continue
+            
+            suffix = ".mp3" if isinstance(eng, EdgeTTSEngine) else ".wav"
+            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+            temp_path = temp_file.name
+            temp_file.close()
 
-        try:
-            success = eng.generate(text, temp_path)
-            if success and _speaking:
-                logger.debug(f"[TTS] Speaking via {eng.name()}")
-                _play_audio_file(temp_path)
-                _speaking = False
-                return
-        except Exception as e:
-            logger.warning(f"[TTS] {eng.name()} failed: {e}")
-        finally:
             try:
-                if os.path.exists(temp_path):
-                    os.remove(temp_path)
-            except:
-                pass
-    
-    # All engines failed — print to console as absolute last resort
+                success = eng.generate(chunk, temp_path)
+                if success and _speaking:
+                    logger.debug(f"[TTS] Streaming via {eng.name()} | Chunk: {chunk[:20]}...")
+                    _play_audio_file(temp_path)
+                    chunk_success = True
+                    break
+            except Exception as e:
+                logger.warning(f"[TTS] {eng.name()} failed: {e}")
+            finally:
+                try:
+                    if os.path.exists(temp_path):
+                        os.remove(temp_path)
+                except:
+                    pass
+                    
+        if not chunk_success:
+            print(f"[CRAVE] {chunk}")
+
     _speaking = False
-    print(f"[CRAVE] {text}")
 
 
 def speak(text: str, block: bool = False):

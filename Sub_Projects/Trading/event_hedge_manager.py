@@ -514,5 +514,15 @@ class EventHedgeManager:
         }
 
 
-# ── Singleton ─────────────────────────────────────────────────────────────────
-event_hedge = EventHedgeManager()
+# ─────────────────────────────────────────────────────────────────────────────
+# PRIORITY 2: Lazy singleton
+# ─────────────────────────────────────────────────────────────────────────────
+_event_hedge_instance = None
+
+def get_event_hedge() -> "EventHedgeManager":
+    global _event_hedge_instance
+    if _event_hedge_instance is None:
+        _event_hedge_instance = EventHedgeManager()
+    return _event_hedge_instance
+
+event_hedge = get_event_hedge

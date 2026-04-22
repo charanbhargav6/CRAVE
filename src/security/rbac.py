@@ -198,6 +198,29 @@ class RBACManager:
         if self.auth_level >= 2: return True
         self.touch()
         
+        try:
+            from src.core.tts import speak
+        except ImportError:
+            speak = lambda x: None
+
+        try:
+            from src.security.face_id import verify_face
+            speak("Verifying biometrics.")
+            print("\n[L2 Auth] Checking Face ID...")
+            matched, dist = verify_face()
+            if matched:
+                print(f"✅ Biometric L2 Access Granted (dist: {dist:.1f})")
+                speak("Access granted.")
+                self.auth_level = max(self.auth_level, 2)
+                self.touch()
+                return True
+            else:
+                print("❌ Biometric failed or not recognized.")
+                speak("Biometric verification failed. Please type your Level 2 PIN in the terminal.")
+        except Exception as e:
+            print(f"[Face ID Error]: {e}")
+            speak("Camera error. Please enter your code in the terminal.")
+
         max_attempts = self.retry_counts["L2"]
         attempts = max_attempts
         while attempts > 0:
@@ -224,7 +247,14 @@ class RBACManager:
         if self.auth_level >= 3: return True
         self.touch()
         
+        try:
+            from src.core.tts import speak
+        except ImportError:
+            speak = lambda x: None
+            
         print("\n[L3 Auth] Authorization required for API access.")
+        speak("Level 3 clearance required. Please enter your password in the terminal.")
+        
         max_attempts = self.retry_counts["L3"]
         attempts = max_attempts
         while attempts > 0:
@@ -235,15 +265,55 @@ class RBACManager:
                 self._fire_intruder_snap("L3", max_attempts - attempts + 1)
                 attempts -= 1
                 continue
+                
             if self._verify_secret(pwd, self.credentials["L3_PWD_HASH"]):
-                print("✅ L3 Access Granted. Decrypting API Keys...")
+                # Password verified. Now check Face ID to avoid SMTP
+                print("\n[L3 Auth] Password accepted. Checking Biometrics to bypass OTP...")
+                try:
+                    from src.security.face_id import verify_face
+                    matched, dist = verify_face()
+                except Exception:
+                    matched = False
+                    
+                if matched:
+                    print(f"✅ L3 Access Granted via Face + Password.")
+                    speak("Access granted.")
+                else:
+                    print("❌ Biometric failed. Resorting to SMTP Email Verification...")
+                    speak("Biometric verification failed. Initiating SMTP protocol. Please check your email and type the OTP in the terminal.")
+                    
+                    import random
+                    expected_otp = str(random.randint(100000, 999999))
+                    try:
+                        from src.agents.email_agent import EmailAgent
+                        target_email = os.environ.get("OWNER_EMAIL", "crave.admin@localhost")
+                        EmailAgent().send_email(to_address=target_email, subject="CRAVE L3 OTP", body=f"Your OTP code is: {expected_otp}")
+                        print(f"[L3 Auth] OTP sent securely to {target_email}.")
+                    except Exception as e:
+                        print(f"SMTP Error: {e}")
+                        speak("SMTP module failed. Locking down.")
+                        return False
+                        
+                    # Custom 5 minute timeout logic inside getpass isn't trivial, so we block.
+                    otp_attempt = input("\n[L3 Auth] Enter 6-digit OTP from Email: ")
+                    if otp_attempt.strip() != expected_otp:
+                        print("❌ Incorrect OTP.")
+                        speak("Incorrect security code.")
+                        self._fire_intruder_snap("L3", 1)
+                        return False
+                        
+                    print("✅ OTP Verified. L3 Access Granted.")
+                    speak("Access granted.")
+                
                 # Inject keys into memory legally
                 crypto_manager.decrypt_env_to_memory()
                 self.auth_level = max(self.auth_level, 3)
                 self.touch()
                 return True
+                
             attempts -= 1
             print("❌ Incorrect Password.")
+            speak("Incorrect password.")
             self._fire_intruder_snap("L3", max_attempts - attempts)
             
         print("⚠️ L3 Authentication Failed. System securing...")
@@ -254,18 +324,80 @@ class RBACManager:
         if self.auth_level >= 4: return True
         self.touch()
         
+        try:
+            from src.core.tts import speak
+        except ImportError:
+            speak = lambda x: None
+            
         print("\n[L4 Auth] MAXIMUM AUTHORIZATION REQUIRED.")
+        speak("Maximum authorization required. Verifying biometrics.")
+
+        # L4 mandates Face ID first
+        try:
+            from src.security.face_id import verify_face
+            matched, dist = verify_face()
+            if not matched:
+                print("❌ Face ID Failed. Level 4 cannot proceed without physical presence.")
+                speak("Biometric presence missing. Level 4 denied.")
+                self.trigger_lockdown()
+                return False
+        except Exception:
+            print("❌ Face ID Error. Level 4 denied.")
+            self.trigger_lockdown()
+            return False
+
+        speak("Biometrics confirmed. Please enter your passphrase in the terminal.")
         max_attempts = self.retry_counts["L4"]
         attempts = max_attempts
         while attempts > 0:
             phrase = getpass.getpass(f"Enter Passphrase ({attempts} attempts left): ")
             if self._verify_secret(phrase, self.credentials["L4_PHR_HASH"]):
-                print("✅ L4 Access Granted.")
+                # Phase 2: OTP via Telegram or SMTP
+                import random
+                expected_otp = str(random.randint(100000, 999999))
+                speak("Passphrase accepted. Dispatching multi-factor validation.")
+                
+                # Try Telegram first
+                telegram_sent = False
+                target_email = os.environ.get("OWNER_EMAIL", "crave.admin@localhost")
+                try:
+                    token = os.environ.get("TELEGRAM_BOT_TOKEN")
+                    chat_id = os.environ.get("TELEGRAM_CHAT_ID")
+                    if token and chat_id:
+                        import requests
+                        requests.post(f"https://api.telegram.org/bot{token}/sendMessage",
+                            json={"chat_id": chat_id, "text": f"🚨 L4 ACTION REQUESTED on Machine.\nOTP: {expected_otp}"}, timeout=5)
+                        telegram_sent = True
+                        print("[L4 Auth] Sent Telegram OTP.")
+                except Exception:
+                    pass
+
+                # Fallback to SMTP
+                if not telegram_sent:
+                    try:
+                        from src.agents.email_agent import EmailAgent
+                        EmailAgent().send_email(to_address=target_email, subject="CRAVE L4 OTP", body=f"Your OTP code is: {expected_otp}\n\nWARNING: Level 4 Action Requested.")
+                        print("[L4 Auth] Sent SMTP Email OTP.")
+                    except Exception as e:
+                        print(f"SMTP Error: {e}")
+                        speak("Failed to initialize OOB verification.")
+                        return False
+
+                otp_attempt = input("\n[L4 Auth] Enter 6-digit OTP from Telegram/Email: ")
+                if otp_attempt.strip() != expected_otp:
+                    print("❌ Incorrect OTP.")
+                    speak("Intruder protocol engaged.")
+                    self.trigger_lockdown()
+                    return False
+                
+                print("✅ OTP Verified. L4 Access Granted.")
                 self.auth_level = 4
                 self.touch()
                 return True
+                
             attempts -= 1
             print("❌ Incorrect Passphrase.")
+            speak("Incorrect passphrase.")
             self._fire_intruder_snap("L4", max_attempts - attempts)
             
         print("⚠️ L4 Authentication Failed. Intruders detected.")
