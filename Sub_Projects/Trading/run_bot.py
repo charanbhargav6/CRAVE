@@ -26,12 +26,27 @@ import argparse
 from pathlib import Path
 from datetime import datetime, timezone
 
-# ── Load .env before anything else ───────────────────────────────────────────
+# ── Load secrets: DPAPI Vault first, then .env fallback ──────────────────────
+# The main CRAVE system stores all API keys in an encrypted DPAPI vault.
+# We load from the vault so the trading bot shares the same Telegram token,
+# exchange keys, etc. — no separate .env needed.
+_crave_root = str(Path(__file__).resolve().parents[2])  # D:\CRAVE
+sys.path.insert(0, _crave_root)
+
+_vault_loaded = False
 try:
-    from dotenv import load_dotenv
-    load_dotenv(Path(__file__).parent / ".env")
-except ImportError:
-    print("python-dotenv not installed. Install with: pip install python-dotenv")
+    from src.security.encryption import crypto_manager
+    _vault_loaded = crypto_manager.decrypt_env_to_memory()
+except Exception as _ve:
+    pass
+
+if not _vault_loaded:
+    # Fallback: try a local .env (standalone deployments like AWS)
+    try:
+        from dotenv import load_dotenv
+        load_dotenv(Path(__file__).parent / ".env")
+    except ImportError:
+        pass
 
 # ── Add project root to path ──────────────────────────────────────────────────
 sys.path.insert(0, str(Path(__file__).parent))
@@ -230,7 +245,8 @@ def run_full_bot(node: str, mode: str):
     from Sub_Projects.Trading.position_tracker  import positions
     from Sub_Projects.Trading.node_orchestrator import orchestrator
     from Sub_Projects.Trading.telegram_interface import tg
-    from Sub_Projects.Trading.daily_bias_engine  import bias_engine
+    from Sub_Projects.Trading.daily_bias_engine  import get_bias_engine
+    bias_engine = get_bias_engine()
     from Sub_Projects.Trading.instrument_scanner import scanner
 
     # ── Start node orchestrator ──────────────────────────────────────────

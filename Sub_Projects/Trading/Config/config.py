@@ -74,8 +74,9 @@ NODES = {
     "phone": {
         "hostname_patterns": ["localhost", "android", "termux"],
         "can_run": [
-            "lite_bot", "position_monitor",
-            "telegram_interface", "state_sync", "heartbeat",
+            "full_bot", "lite_bot", "position_monitor", "signal_detection",
+            "daily_bias", "instrument_scan", "websocket",
+            "telegram_interface", "state_sync", "heartbeat", "paper_trading"
         ],
         "db_path": "/data/data/com.termux/files/home/CRAVE/Database/crave.db",
         "thermal_limit_celsius": 42,
