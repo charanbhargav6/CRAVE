@@ -97,31 +97,70 @@ class ExecutionAgent:
         try:
             if exchange == "alpaca" and self.data_agent and self.data_agent.alpaca:
                 side  = 'buy' if direction in ('buy', 'long') else 'sell'
-                order = self.data_agent.alpaca.submit_order(
-                    symbol        = symbol,
-                    qty           = lot_size,
-                    side          = side,
-                    type          = 'market',
-                    time_in_force = 'gtc',
-                    order_class   = 'bracket',
-                    stop_loss     = {'stop_price': str(round(sl_price, 4))},
-                    take_profit   = {'limit_price': str(round(tp2_price, 4))}
-                )
+
+                # Hybrid execution: use limit order at OB if available
+                order_type = validated_signal.get("order_type", "market")
+                limit_px   = validated_signal.get("limit_price")
+
+                if order_type == "limit" and limit_px:
+                    order = self.data_agent.alpaca.submit_order(
+                        symbol        = symbol,
+                        qty           = lot_size,
+                        side          = side,
+                        type          = 'limit',
+                        limit_price   = str(round(limit_px, 4)),
+                        time_in_force = 'gtc',
+                        order_class   = 'bracket',
+                        stop_loss     = {'stop_price': str(round(sl_price, 4))},
+                        take_profit   = {'limit_price': str(round(tp2_price, 4))}
+                    )
+                    logger.info(
+                        f"[ExecutionAgent] Alpaca LIMIT @ {limit_px:.4f} "
+                        f"({'postOnly' if validated_signal.get('strict_post_only') else 'standard'})"
+                    )
+                else:
+                    order = self.data_agent.alpaca.submit_order(
+                        symbol        = symbol,
+                        qty           = lot_size,
+                        side          = side,
+                        type          = 'market',
+                        time_in_force = 'gtc',
+                        order_class   = 'bracket',
+                        stop_loss     = {'stop_price': str(round(sl_price, 4))},
+                        take_profit   = {'limit_price': str(round(tp2_price, 4))}
+                    )
+                fill_price = limit_px if (order_type == "limit" and limit_px) else current_price
                 receipt = {"id": order.id, "platform": "alpaca",
-                           "status": "filled", "entry": current_price}
+                           "status": "filled", "entry": fill_price}
 
             elif exchange == "binance" and self.data_agent and self.data_agent.binance:
                 side     = 'buy' if direction in ('buy', 'long') else 'sell'
                 sl_side  = 'sell' if side == 'buy' else 'buy'
 
-                order = self.data_agent.binance.create_order(
-                    symbol=symbol, type='market', side=side, amount=lot_size
-                )
+                # Hybrid execution: limit at OB if available
+                order_type     = validated_signal.get("order_type", "market")
+                limit_px       = validated_signal.get("limit_price")
+                strict_po      = validated_signal.get("strict_post_only", False)
+
+                if order_type == "limit" and limit_px:
+                    entry_params = {'postOnly': True} if strict_po else {}
+                    order = self.data_agent.binance.create_order(
+                        symbol=symbol, type='LIMIT', side=side,
+                        amount=lot_size, price=round(limit_px, 4),
+                        params=entry_params
+                    )
+                    logger.info(
+                        f"[ExecutionAgent] Binance LIMIT @ {limit_px:.4f} "
+                        f"{'postOnly' if strict_po else 'standard'}"
+                    )
+                else:
+                    order = self.data_agent.binance.create_order(
+                        symbol=symbol, type='market', side=side, amount=lot_size
+                    )
 
                 # FIX v9.1: Add reduceOnly=True to SL and TP orders.
                 # Without this, if the main position closes by another route,
-                # these orders become OPENING orders on the opposite side —
-                # meaning a filled TP would open a new SHORT, and vice versa.
+                # these orders become OPENING orders on the opposite side.
                 # reduceOnly=True ensures these orders can ONLY close an existing position.
                 self.data_agent.binance.create_order(
                     symbol=symbol,
@@ -130,7 +169,7 @@ class ExecutionAgent:
                     amount=lot_size,
                     params={
                         'stopPrice':   round(sl_price, 4),
-                        'reduceOnly':  True,   # FIX: will not open a new position
+                        'reduceOnly':  True,
                         'closePosition': True,
                     }
                 )
@@ -141,12 +180,13 @@ class ExecutionAgent:
                     amount=lot_size,
                     params={
                         'stopPrice':   round(tp2_price, 4),
-                        'reduceOnly':  True,   # FIX: will not open a new position
+                        'reduceOnly':  True,
                         'closePosition': True,
                     }
                 )
+                fill_price = limit_px if (order_type == "limit" and limit_px) else current_price
                 receipt = {"id": order['id'], "platform": "binance",
-                           "status": "filled", "entry": current_price}
+                           "status": "filled", "entry": fill_price}
 
             elif exchange == "mt5":
                 import MetaTrader5 as mt5

@@ -277,7 +277,71 @@ def run_full_bot(node: str, mode: str):
     )
 
     logger.info("[Main] All Session 2 modules loaded. Bot running.")
-    logger.info("[Main] 🔜 Phase 3: DynamicTPEngine + EventHedgeManager + Signal loop")
+
+    # ── Zone 3: API Sentinel ────────────────────────────────────────────
+    try:
+        from Sub_Projects.Trading.security.api_sentinel import get_sentinel
+        get_sentinel().start()
+        logger.info("[Main] API Sentinel started.")
+    except Exception as e:
+        logger.warning(f"[Main] API Sentinel failed to start: {e}")
+
+    # ── Zone 4: Wire content + security Telegram commands ────────────────
+    import json as _json
+
+    def _cmd_export_dashboard(args: str):
+        try:
+            from Sub_Projects.Trading.content.trade_recap import get_content_factory
+            path = get_content_factory().export_public_dashboard()
+            tg.send(f"Dashboard exported: {path}")
+        except Exception as e:
+            tg.send(f"Export failed: {e}")
+
+    def _cmd_sentinel_status(args: str):
+        try:
+            from Sub_Projects.Trading.security.api_sentinel import get_sentinel
+            s = get_sentinel().get_status()
+            tg.send(
+                "<b>SENTINEL STATUS</b>\n"
+                + "\n".join(f"{k}: {v}" for k, v in s.items())
+            )
+        except Exception as e:
+            tg.send(f"Sentinel: {e}")
+
+    def _cmd_run_chaos(args: str):
+        test = (args.strip() or "network_lag")
+        tg.send(f"Starting chaos test: {test} (30s)")
+        try:
+            from Sub_Projects.Trading.security.chaos_monkey import ChaosMonkey
+            monkey = ChaosMonkey()
+            if test == "network_lag":
+                result = monkey.inject_network_lag(500, 30)
+            elif test == "rate_limit":
+                result = monkey.inject_api_rate_limit(0.5, 30)
+            elif test == "db":
+                result = monkey.inject_db_disconnect(30)
+            elif test == "telegram":
+                result = monkey.inject_telegram_blackout(30)
+            else:
+                result = monkey.inject_network_lag(500, 30)
+            all_ok = result.get("all_checks_passed", False)
+            tg.send(
+                f"Chaos test complete: {test}\n"
+                f"State check: {'ALL OK' if all_ok else 'Issues detected'}\n"
+                f"Details: {_json.dumps(result.get('state_checks', {}))}"
+            )
+        except Exception as e:
+            tg.send(f"Chaos test failed: {e}")
+
+    tg.register_command("/export_dashboard", _cmd_export_dashboard)
+    tg.register_command("/sentinel",         _cmd_sentinel_status)
+    tg.register_command("/chaos",            _cmd_run_chaos)
+
+    logger.info(
+        "[Main] CRAVE v10.4 fully operational. "
+        "Zones 1-4 active: OrderFlow + Jarvis + Sentinel + Content. "
+        "Telegram commands available."
+    )
 
     # ── Main loop ────────────────────────────────────────────────────────
     try:

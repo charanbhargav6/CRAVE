@@ -1,4 +1,4 @@
-﻿"""
+"""
 CRAVE v10.0 - Daily Bias Engine
 =================================
 Runs once at 06:30 UTC (London pre-market).
@@ -144,10 +144,37 @@ class DailyBiasEngine:
         # ── Daily analysis ─────────────────────────────────────────────────
         daily_bias = self._analyse_daily(df_daily)
 
+        # ── Zone 1: Liquidity Void Scanner ────────────────────────────────
+        # Check for unfilled FVGs > 7 days old that act as price magnets.
+        # If trade direction points toward a void -> add strength bonus.
+        void_bonus = 0
+        try:
+            from Sub_Projects.Trading.intelligence.order_flow import (
+                scan_liquidity_voids, get_void_bias_bonus
+            )
+            voids = scan_liquidity_voids(df_daily, min_age_days=7)
+            if voids:
+                bias_direction = daily_bias.get("direction", "unknown")
+                void_result = get_void_bias_bonus(
+                    voids, bias_direction,
+                    float(df_daily["close"].iloc[-1])
+                )
+                void_bonus = void_result.get("bonus", 0)
+                if void_bonus > 0:
+                    logger.info(
+                        f"[Bias] {symbol}: Liquidity void bonus +{void_bonus} - "
+                        f"{void_result.get('reason','')}"
+                    )
+        except Exception as e:
+            logger.debug(f"[Bias] Void scanner error (non-fatal): {e}")
+
         # ── Combine ────────────────────────────────────────────────────────
         final_bias, strength, reason = self._combine_biases(
             weekly_bias, daily_bias, symbol
         )
+        # Apply void bonus to strength
+        if void_bonus > 0:
+            strength = min(3, strength + void_bonus)
 
         # ── Key levels ────────────────────────────────────────────────────
         key_levels        = self._find_key_levels(df_daily)

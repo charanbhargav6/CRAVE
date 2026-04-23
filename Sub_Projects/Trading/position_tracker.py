@@ -410,6 +410,23 @@ class PositionTracker:
             f"| {outcome} | {r_multiple:+.2f}R "
             f"| held {hold_h:.1f}h"
         )
+
+        # ── Zone 2: Jarvis post-mortem (async, non-blocking) ──────────────
+        try:
+            from Sub_Projects.Trading.intelligence.jarvis_llm import get_jarvis
+            get_jarvis().write_trade_postmortem(closed_trade, run_async=True)
+        except Exception:
+            pass
+
+        # ── Zone 4: Content factory (async, A+ trades only) ───────────────
+        try:
+            from Sub_Projects.Trading.content.trade_recap import get_content_factory
+            get_content_factory().generate_trade_recap(
+                pos["trade_id"], run_async=True
+            )
+        except Exception:
+            pass
+
         return closed_trade
 
     # ─────────────────────────────────────────────────────────────────────────

@@ -105,13 +105,28 @@ class PaperTradingEngine:
         This is the ONLY place in the codebase that calculates paper slippage.
         trading_loop._paper_execute() delegates here entirely.
 
-        Slippage model (realistic based on liquidity):
+        v10.4: If order_type == "limit", simulate a perfect fill at the
+        limit price with zero slippage (institutional-grade OB entry).
+
+        Slippage model (for market orders):
           Forex majors:  2 pips    (tight spread, high liquidity)
           Gold/Silver:   3 pips    (moderate spread)
           Crypto:        0.05%     (wider spread, volatile)
           Stocks:        0.02%     (moderate)
           Default:       0.02%
         """
+        # Limit orders: perfect fill at the limit price, zero slippage
+        order_type = validated.get("order_type", "market")
+        limit_px   = validated.get("limit_price")
+        if order_type == "limit" and limit_px:
+            return {
+                "fill_price":      round(limit_px, 5),
+                "slippage":        0.0,
+                "spread_cost_pct": 0.0,
+                "simulated":       True,
+                "order_type":      "limit",
+            }
+
         from Config.config import get_instrument, get_asset_class
         symbol    = validated["symbol"]
         direction = validated["direction"]
@@ -142,6 +157,7 @@ class PaperTradingEngine:
             "slippage":        round(slippage, 5),
             "spread_cost_pct": round(spread_cost_pct, 6),
             "simulated":       True,
+            "order_type":      "market",
         }
 
     # ─────────────────────────────────────────────────────────────────────────

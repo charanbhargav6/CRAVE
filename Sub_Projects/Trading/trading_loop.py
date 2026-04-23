@@ -464,6 +464,74 @@ class TradingLoop:
         if not corr_ok:
             return None
 
+        # ── Zone 1: Order Flow Delta Confirmation ─────────────────────────
+        # If price is at an OB, check delta confirms the direction.
+        # Dead OBs have negative delta at the level — skip them.
+        try:
+            from Sub_Projects.Trading.intelligence.order_flow import (
+                check_delta_confirmation
+            )
+            obs = context.get("Order_Blocks", [])
+            if obs:
+                ob_zone = obs[0].get("zone", [0, 0])
+                if ob_zone[0] > 0:
+                    df_5m = _get_ohlcv_with_ws_fallback(symbol, "5m", 50)
+                    if df_5m is not None and len(df_5m) >= 10:
+                        delta_check = check_delta_confirmation(
+                            df_5m, ob_zone, direction
+                        )
+                        if delta_check.get("signal") == "SKIP":
+                            logger.info(
+                                f"[TradingLoop] {symbol}: "
+                                f"DEAD OB — {delta_check['reason']}"
+                            )
+                            self._log_signal(
+                                symbol, "skip",
+                                f"Dead OB: {delta_check['reason']}",
+                                confidence, grade_str, context, df_1h=df_1h
+                            )
+                            return None
+                        if delta_check.get("signal") == "WAIT":
+                            logger.debug(
+                                f"[TradingLoop] {symbol}: "
+                                f"Delta WAIT — {delta_check['reason']}"
+                            )
+                            self._add_to_watchlist(symbol, {"symbol": symbol, "score": 7})
+                            return None
+        except Exception as e:
+            logger.debug(f"[TradingLoop] Delta check error (non-fatal): {e}")
+
+        # ── Zone 2: Jarvis Sentiment Override ────────────────────────────
+        # Check macro narrative before executing signal.
+        try:
+            from Sub_Projects.Trading.intelligence.jarvis_llm import get_jarvis
+            jarvis = get_jarvis()
+            if jarvis.is_ready():
+                override = jarvis.get_sentiment_override(symbol, direction)
+                action   = override.get("action", "PROCEED")
+                if action == "NO_TRADE":
+                    logger.info(
+                        f"[TradingLoop] {symbol}: Jarvis veto — "
+                        f"{override['reason']}"
+                    )
+                    self._log_signal(
+                        symbol, "skip",
+                        f"Jarvis: {override['reason']}",
+                        confidence, grade_str, context, df_1h=df_1h
+                    )
+                    return None
+                if action == "HALF_SIZE":
+                    self._jarvis_half_size = True
+                    logger.info(
+                        f"[TradingLoop] {symbol}: Jarvis half-size — "
+                        f"{override['reason']}"
+                    )
+                else:
+                    self._jarvis_half_size = False
+        except Exception as e:
+            logger.debug(f"[TradingLoop] Jarvis check error (non-fatal): {e}")
+            self._jarvis_half_size = False
+
         # ── Portfolio-level risk gate ─────────────────────────────────────
         # Cross-market heat, currency exposure, vega limit.
         # More comprehensive than the per-trade correlation check above.
@@ -490,6 +558,13 @@ class TradingLoop:
             logger.info(
                 f"[TradingLoop] {symbol}: Volatile regime - "
                 f"size halved to {risk_pct:.2f}%"
+            )
+        # If Jarvis flagged half-size (sentiment conflict)
+        if getattr(self, "_jarvis_half_size", False):
+            risk_pct = round(risk_pct * 0.5, 4)
+            logger.info(
+                f"[TradingLoop] {symbol}: Jarvis half-size applied "
+                f"-> {risk_pct:.2f}%"
             )
 
         risk_agent = RiskAgent()
@@ -519,6 +594,36 @@ class TradingLoop:
         validated["is_paper"]  = self._is_paper
         validated["exchange"]  = self._get_exchange_for(symbol)
         validated["node"]      = self._get_node_name()
+
+        # ── Hybrid Execution: OB Limit Order Logic ────────────────────────
+        # Detect the nearest Order Block boundary for precise limit entry.
+        # Node-aware: AWS uses strict postOnly, local uses standard limits.
+        obs = context.get("Order_Blocks", [])
+        ob_limit_price = None
+        if obs:
+            nearest_ob = obs[0]
+            ob_zone = nearest_ob.get("zone", [0, 0])
+            if ob_zone[0] > 0:
+                # BUY: enter at top of OB (demand), SELL: enter at bottom (supply)
+                if direction in ("buy", "long"):
+                    ob_limit_price = float(ob_zone[1])  # top of demand OB
+                else:
+                    ob_limit_price = float(ob_zone[0])  # bottom of supply OB
+
+        node_name = self._get_node_name()
+        is_cloud = node_name in ("aws", "gcp", "oracle")
+
+        if ob_limit_price and ob_limit_price > 0:
+            validated["order_type"]       = "limit"
+            validated["limit_price"]      = round(ob_limit_price, 5)
+            validated["strict_post_only"] = is_cloud  # True on AWS, False on laptop/phone
+            logger.info(
+                f"[TradingLoop] {symbol}: Limit @ {ob_limit_price:.5f} "
+                f"({'postOnly' if is_cloud else 'standard'})"
+            )
+        else:
+            validated["order_type"]       = "market"
+            validated["strict_post_only"] = False
 
         logger.info(
             f"[TradingLoop] SIGNAL: {symbol} {direction.upper()} "
