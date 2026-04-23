@@ -493,11 +493,10 @@ class CRAVEOrb(QMainWindow):
 
     def _handle_cmd_bg(self, text: str):
         if self._orchestrator:
-            self.sig_state.emit("thinking")
-            self.sig_user_command.emit(text)
+            # We don't emit user_command or crave_reply here because 
+            # orchestrator.handle() already triggers the callbacks.
             try:
-                reply = self._orchestrator.handle(text)
-                self.sig_crave_reply.emit(reply)
+                self._orchestrator.handle(text, source="local")
                 self.sig_state.emit("speaking")
                 time.sleep(2)  # Simulate talk time
             except:

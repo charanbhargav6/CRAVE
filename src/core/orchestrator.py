@@ -525,19 +525,26 @@ class Orchestrator:
             print(f"[Orchestrator] Input exceeded 15k limit ({len(text)}). Truncating.")
             text = text[:15000] + "\n...[TRUNCATED BY CRAVE]"
             
-        intent = self._classify_intent_llm(text)
+        # ── The Agentic Brain (LLM Tool-Calling) ─────────────────────────
+        tool_call = self._tool_call_llm(text)
+        intent = tool_call.get("tool", "chat")
+        tool_params = tool_call.get("params", {})
         
         # Phase 10: Multi-Step Task Chaining Override
         # If it's heavily chained ("and", "then"), route to the GUI/Task Planner instead
         lower_txt = text.lower()
         if (" and " in lower_txt or " then " in lower_txt or " next " in lower_txt) and len(lower_txt.split()) > 6:
             # We don't route pure chat/knowledge queries ("tell me about X and Y") to the planner
-            if not intent == INTENT_CHAT:
+            if not intent == "chat":
                 intent = "automate"
         
-        state  = make_state(command=text, intent=intent)
+        state  = make_state(
+            command=text, 
+            intent=intent,
+            metadata={"tool_params": tool_params}
+        )
 
-        print(f"[Orchestrator] [{source.upper()}] Command: '{text}'  Intent: {intent}")
+        print(f"[Orchestrator] [{source.upper()}] Command: '{text}'  Intent: {intent}  Params: {tool_params}")
 
         # Notify Orb: command received + thinking state (only if local)
         if source == "local":
@@ -782,6 +789,7 @@ class Orchestrator:
             INTENT_SYSTEM:  self._handle_system,
             "youtube":      self._handle_youtube,
             "automate":     self._handle_automation,
+            "system_command": self._handle_agent_loop,
             INTENT_EXPLAIN: self._handle_explain,
             INTENT_EVOLVE:  self._handle_evolve,
             INTENT_SELF_MODIFY: self._handle_self_modify,
@@ -1044,6 +1052,97 @@ class Orchestrator:
             logger.error(f"Failed to parse message command: {e}")
             return "I failed to parse the message. Please try: 'message [name] saying [content]'"
 
+    def _handle_agent_loop(self, state: dict) -> str:
+        """
+        Claw-style Agentic Terminal Loop.
+        Allows the LLM to write and execute PowerShell commands iteratively
+        until it resolves the user's request, with RBAC security checks.
+        """
+        if not self._router:
+            return "Model router not ready."
+
+        from src.security.rbac import get_rbac
+        import subprocess
+        import re
+
+        agent_sys_prompt = (
+            "You are an autonomous shell agent. You can run powershell commands to inspect the system, "
+            "find files, and answer the user's request. "
+            "To run a command, output it exactly inside a markdown ```powershell block. "
+            "I will run it and return the output. If you have the final answer, reply normally without a code block."
+        )
+
+        prompt = state["command"]
+        messages = self._context[-10:] if len(self._context) > 10 else self._context.copy()
+        
+        max_steps = 5
+        for step in range(max_steps):
+            self._notify_state("thinking")
+            res = self._router.chat(
+                prompt=prompt,
+                messages=messages,
+                system_prompt=agent_sys_prompt,
+                task_type="primary"
+            )
+            
+            response_text = res.get("response", "")
+            messages.append({"role": "assistant", "content": response_text})
+
+            # Look for powershell code blocks
+            match = re.search(r"```powershell\s+(.*?)\s+```", response_text, re.DOTALL | re.IGNORECASE)
+            if not match:
+                return response_text  # Final answer reached
+                
+            cmd = match.group(1).strip()
+            
+            # ── RBAC Security Check ──────────────────────────────────────
+            # Level 1: Read-only (auto-approved)
+            # Level 2: Moderate state changes (mkdir, echo)
+            # Level 3/4: Destructive (rm, del, reg, format, Stop-Process)
+            
+            cmd_lower = cmd.lower()
+            auth_required = 1
+            
+            destructive_keywords = ["rm ", "del ", "remove-item", "format", "reg ", "stop-process", "kill"]
+            moderate_keywords = ["mkdir", "new-item", "echo", "Out-File", "set-content", "add-content"]
+            
+            if any(k in cmd_lower for k in destructive_keywords):
+                auth_required = 3
+            elif any(k in cmd_lower for k in moderate_keywords) or ">" in cmd_lower:
+                auth_required = 2
+                
+            rbac = get_rbac()
+            if rbac.auth_level < auth_required:
+                msg = f"Security Intercept: Command '{cmd[:20]}...' requires L{auth_required} clearance (Current: L{rbac.auth_level}). Authenticate to proceed."
+                print(f"[AgentLoop] BLOCKED: {msg}")
+                return msg
+
+            print(f"[AgentLoop] Executing (L{auth_required} authorized): {cmd}")
+            self._notify_state("speaking")
+            
+            try:
+                # Execute securely
+                result = subprocess.run(
+                    ["powershell", "-Command", cmd],
+                    capture_output=True, text=True, timeout=15
+                )
+                output = result.stdout + result.stderr
+                if not output.strip():
+                    output = "[Command executed successfully with no output]"
+            except subprocess.TimeoutExpired:
+                output = "[Error: Command timed out after 15 seconds]"
+            except Exception as e:
+                output = f"[Execution Error: {e}]"
+                
+            # Truncate giant outputs
+            if len(output) > 2000:
+                output = output[:2000] + "\n...[TRUNCATED]"
+                
+            prompt = f"Command Output:\n{output}\nContinue reasoning."
+            messages.append({"role": "user", "content": prompt})
+            
+        return "I reached the maximum number of terminal steps without a final answer."
+
     def _handle_system(self, state: dict) -> str:
         """Handles basic OS system commands dynamically."""
         cmd = state["command"].lower().strip()
@@ -1116,10 +1215,20 @@ class Orchestrator:
                 return f"Opening website {target}."
             
             if "close" in cmd or "kill" in cmd:
+                # Fuzzy matching for process closing (e.g. "notepd" -> "notepad")
                 kill_target = exe if exe.endswith(".exe") else f"{exe}.exe"
-                subprocess.call(["taskkill", "/F", "/IM", kill_target])
+                # If exact kill fails, try a wild-card kill
+                ret_code = subprocess.call(["taskkill", "/F", "/IM", kill_target], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                if ret_code != 0 and not exe.endswith(".exe"):
+                    # Try fuzzy kill via powershell
+                    subprocess.call(["powershell", "-c", f"Get-Process *{exe}* | Stop-Process -Force"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 return f"Closed {target}."
             else:
+                # Handle special folder aliases
+                if "crave" in target.lower() and "folder" in target.lower():
+                    os.startfile("D:\\CRAVE")
+                    return "Opening CRAVE workspace folder."
+
                 try:
                     # Native foreground execution (handles apps, docs, folders, protocols)
                     os.startfile(exe)
@@ -1138,6 +1247,18 @@ class Orchestrator:
         General conversation and Q&A — routes to Qwen3 via ModelRouter.
         This is the workhorse handler used by ~80% of commands.
         """
+        cmd_lower = state["command"].lower()
+        
+        # Intercept WhatsApp and YouTube hallucinations
+        if "whatsapp message" in cmd_lower:
+            return "I cannot read WhatsApp messages automatically. The WhatsApp Desktop app does not provide an API for message extraction due to end-to-end encryption. I can only send messages via automation."
+            
+        if "youtube channel" in cmd_lower or "about my channel" in cmd_lower:
+            return "I don't have active OAuth access to your YouTube Studio analytics right now. To view your recent channel updates and subscriber stats, you need to authorize the YouTube Data API in my configuration."
+            
+        if "location of crave" in cmd_lower or "where is crave" in cmd_lower:
+            return "My core system is located at D:\\CRAVE on your local machine."
+
         if not self._router:
             return "Model router not ready yet."
 
