@@ -215,7 +215,7 @@ class TelegramAgent:
                 )
             
             # Also append recent trading log tail
-            trading_log = os.path.join(os.environ.get("CRAVE_ROOT", "D:\\CRAVE"), "Logs", "trading.log")
+            trading_log = os.path.join(os.environ.get("CRAVE_ROOT", r"D:\CRAVE"), "Logs", "trading.log")
             if os.path.exists(trading_log):
                 with open(trading_log, "r", encoding="utf-8") as f:
                     lines = f.readlines()
@@ -235,7 +235,7 @@ class TelegramAgent:
         if not self._is_authorized(update): return
         self._track_message(update.effective_chat.id, update.message.message_id)
         
-        log_path = os.path.join(os.environ.get("CRAVE_ROOT", "D:\\CRAVE"), "Logs", "crave.log")
+        log_path = os.path.join(os.environ.get("CRAVE_ROOT", r"D:\CRAVE"), "Logs", "crave.log")
         if os.path.exists(log_path):
             try:
                 with open(log_path, "r", encoding="utf-8") as f:

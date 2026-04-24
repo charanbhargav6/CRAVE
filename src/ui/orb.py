@@ -44,7 +44,7 @@ ORB_STATES = {
 }
 
 SETTINGS_FILE = os.path.join(
-    os.environ.get("CRAVE_ROOT", "D:\\CRAVE"), "config", "orb_settings.json"
+    os.environ.get("CRAVE_ROOT", r"D:\CRAVE"), "config", "orb_settings.json"
 )
 
 # ── Dynamic Audio Wave Widget ────────────────────────────────────────────────

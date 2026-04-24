@@ -17,8 +17,8 @@ Architecture:
 import os
 import sys
 
-# Change HuggingFace cache to D: drive before ANY module imports huggingface_hub
-os.environ["HF_HOME"] = "D:\\CRAVE\\models\\huggingface"
+# Change HuggingFace cache before ANY module imports huggingface_hub
+os.environ["HF_HOME"] = os.path.join(os.environ.get("CRAVE_ROOT", r"D:\CRAVE"), "models", "huggingface")
 
 import threading
 
@@ -47,7 +47,7 @@ def main():
     try:
         from src.core.config_watcher import ConfigWatcher
         watcher = ConfigWatcher()
-        watcher.start_watching(os.path.join("D:\\CRAVE", "config", "hardware.json"))
+        watcher.start_watching(os.path.join(os.environ.get("CRAVE_ROOT", r"D:\CRAVE"), "config", "hardware.json"))
     except Exception as e:
         print(f"Warning: Hot-reload watcher failed to start: {e}")
 

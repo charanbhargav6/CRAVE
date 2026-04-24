@@ -23,7 +23,7 @@ logger = logging.getLogger("crave.core.memory_bank")
 class MemoryBank:
     def __init__(self):
         # We store the memory physically in the encrypted Data directory
-        self.memory_dir = os.path.join(os.environ.get("CRAVE_ROOT", "D:\\CRAVE"), "data")
+        self.memory_dir = os.path.join(os.environ.get("CRAVE_ROOT", r"D:\CRAVE"), "data")
         self.db_file = os.path.join(self.memory_dir, "trading_memory.json")
         self.task_db_file = os.path.join(self.memory_dir, "task_memory.json")
         self.knowledge_file = os.path.join(self.memory_dir, "knowledge_graph.json")

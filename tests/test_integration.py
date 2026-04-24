@@ -1,3 +1,4 @@
+import os
 """
 CRAVE Phase 12 — Full Integration Test Suite
 =============================================
@@ -107,7 +108,7 @@ print("\n--- 6. FileAgent Security Hardening ---")
 def test_file_vault_block():
     from src.agents.file_agent import FileAgent
     fa = FileAgent()
-    result = fa.read_file("D:\\CRAVE\\data\\vault\\master.key")
+    result = fa.read_file(os.path.join(os.environ.get("CRAVE_ROOT", r"D:\CRAVE"), "data", "vault", "master.key"))
     assert "Access Denied" in result or "ERROR" in result, f"Vault NOT blocked: {result}"
     return "BLOCKED"
 
@@ -305,7 +306,7 @@ print("\n--- 13. Configuration Files ---")
 
 def test_hardware_json():
     import json
-    with open("D:\\CRAVE\\config\\hardware.json", "r") as f:
+    with open(os.path.join(os.environ.get("CRAVE_ROOT", r"D:\CRAVE"), "config", "hardware.json"), "r") as f:
         cfg = json.load(f)
     assert "ollama_host" in cfg, "Missing ollama_host"
     assert "11434" in cfg["ollama_host"], f"Ollama port wrong: {cfg['ollama_host']}"
@@ -314,7 +315,7 @@ def test_hardware_json():
     return f"Port=11434, Model={cfg['models']['primary']}"
 
 def test_no_mcp_config():
-    exists = os.path.exists("D:\\CRAVE\\config\\mcp_config.json")
+    exists = os.path.exists(os.path.join(os.environ.get("CRAVE_ROOT", r"D:\CRAVE"), "config", "mcp_config.json"))
     assert not exists, "mcp_config.json still exists (should be deleted)"
     return "Cleaned"
 

@@ -19,7 +19,7 @@ import threading
 import tempfile
 import wave
 
-sys.path.insert(0, os.path.join("D:\\CRAVE", "src"))
+sys.path.insert(0, os.path.join(os.environ.get("CRAVE_ROOT", r"D:\CRAVE"), "src"))
 
 GREEN  = "\033[92m"
 RED    = "\033[91m"
@@ -365,12 +365,12 @@ section("14. Models Directory")
 mdir = models_dir()
 if os.path.isdir(mdir):
     contents = os.listdir(mdir)
-    ok(f"D:\\CRAVE\\models\\  exists  ({len(contents)} items)")
+    ok(f"{os.path.join(os.environ.get("CRAVE_ROOT", r"D:\CRAVE"), "models", "  exists  ({len(contents)} items)"))
     if contents:
         for item in contents[:5]:
             ok(f"  Found: {item}")
     else:
-        warn("D:\\CRAVE\\models\\  is empty — Whisper will download here on first use")
+        warn(os.path.join(os.environ.get("CRAVE_ROOT", r"D:\CRAVE"), "models", "  is empty — Whisper will download here on first use"))
 else:
     fail(f"{mdir}  not found", "mkdir " + mdir)
 

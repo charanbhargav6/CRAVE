@@ -25,6 +25,7 @@ class SelfModifier:
 
     def __init__(self):
         self._load_dependencies()
+        self._session_attempts = 0
 
     def _load_dependencies(self):
         """Lazy load to avoid cyclic imports."""
@@ -54,7 +55,7 @@ class SelfModifier:
             
         # 2. Claude / Anthropic (if configured via OpenRouter or native)
         if "ANTHROPIC_API_KEY" in os.environ:
-            available.append(("claude", "claude-3-5-sonnet-20240620"))
+            available.append(("claude", "claude-3-7-sonnet-20250219"))
             
         # 3. OpenAI
         if "OPENAI_API_KEY" in os.environ:
@@ -188,7 +189,11 @@ Respond with valid JSON only."""
         4. User confirmation Diff
         5. Merge + auto-revert monitor
         """
-        logger.info(f"[SelfModifier] Starting modification: {task_description}")
+        if self._session_attempts >= 3:
+            return "Safety Halt: Reached maximum self-modification attempts (3) for this session. Please review system stability."
+            
+        self._session_attempts += 1
+        logger.info(f"[SelfModifier] Starting modification: {task_description} (Attempt {self._session_attempts}/3)")
         
         feature_slug = "".join([c if c.isalnum() else "-" for c in task_description[:20].lower()])
         branch_name = f"feat/{feature_slug}-{int(datetime.now().timestamp())}"

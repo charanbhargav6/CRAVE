@@ -12,6 +12,15 @@ import zipfile
 def install_pentagi():
     print("=== CRAVE Autonomous Security: PentAGI Setup ===")
     
+    # Security Gate
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+    from src.security.rbac import get_rbac
+    rbac = get_rbac()
+    if rbac.auth_level < 4:
+        print("ERROR: Unauthorized. L4 Passphrase required to install offensive security tools.")
+        sys.exit(1)
+        
+
     install_dir = os.path.join(os.path.dirname(__file__), "pentagi")
     os.makedirs(install_dir, exist_ok=True)
     

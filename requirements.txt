@@ -1,78 +1,40 @@
-## CRAVE — Python Dependencies
-# Install: cd D:\CRAVE && .venv\Scripts\activate && pip install -r requirements.txt
+# CRAVE Core Requirements
 
-# ─── Core LLM ───────────────────────────────
-ollama
+# AI & LLMs
+ollama>=0.1.7
+langchain>=0.1.13
+google-generativeai>=0.4.1
+groq>=0.4.2
 
-# ─── API Routing (Hybrid Cloud) ─────────────
-google-genai
-groq
-openai
-tavily-python
-python-dotenv
+# Vision & Audio
+opencv-python>=4.9.0
+SpeechRecognition>=3.10.1
+pyttsx3>=2.90
+sounddevice>=0.4.6
+whisper>=1.1.10
+onnxruntime>=1.17.1
+openwakeword>=0.6.0
+ctranslate2>=4.1.0
+faster-whisper>=1.0.1
+edge-tts>=6.1.9
+elevenlabs>=0.2.27
 
-# ─── Voice Pipeline ─────────────────────────
-faster-whisper
-kokoro-onnx
-openwakeword
-pyaudio
-sounddevice
-soundfile
+# Data & Web
+requests>=2.31.0
+beautifulsoup4>=4.12.3
+flask>=3.0.2
+pandas>=2.2.1
+yfinance>=0.2.37
+ta>=0.11.0
 
-# ─── Orchestration ──────────────────────────
-langchain
-langgraph
+# Security & Utilities
+bcrypt>=4.1.2
+cryptography>=42.0.5
+python-dotenv>=1.0.1
+psutil>=5.9.8
 
-# ─── UI ─────────────────────────────────────
-PyQt6
+# UI
+PyQt6>=6.6.1
 
-# ─── Security ───────────────────────────────
-cryptography
-bcrypt
-pywin32
-
-# ─── Communication ──────────────────────────
-python-telegram-bot
-requests
-
-# ─── System Monitoring ─────────────────────
-psutil
-mss
-
-# ─── Content Creation ──────────────────────
-python-pptx
-ffmpeg-python
-Pillow
-
-# ─── Web Scraping ──────────────────────────
-beautifulsoup4
-
-# ─── Automation ─────────────────────────────
-pywinauto
-pyautogui
-selenium
-playwright
-pywhatkit
-
-# ─── Machine Learning ───────────────────────
-scikit-learn
-
-# ─── Trading ────────────────────────────────
-alpaca-trade-api
-ccxt
-MetaTrader5
-backtrader
-backtesting
-pandas
-
-# ─── Utilities ──────────────────────────────
-paramiko
-schedule
-numpy
-
-# ─── Phase 11: Hardening ────────────────────
-rich                    # Live terminal dashboard
-face_recognition        # Face ID (L1.5 biometric auth)
-opencv-python           # Camera capture for Face ID + intruder photos
-edge-tts                # Microsoft Neural TTS (online)
-pygame                  # Audio playback for TTS
+# Pentesting / APIs
+shodan>=1.31.0

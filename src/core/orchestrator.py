@@ -1226,7 +1226,7 @@ class Orchestrator:
             else:
                 # Handle special folder aliases
                 if "crave" in target.lower() and "folder" in target.lower():
-                    os.startfile("D:\\CRAVE")
+                    os.startfile(os.environ.get("CRAVE_ROOT", r"D:\CRAVE")
                     return "Opening CRAVE workspace folder."
 
                 try:
@@ -1257,7 +1257,7 @@ class Orchestrator:
             return "I don't have active OAuth access to your YouTube Studio analytics right now. To view your recent channel updates and subscriber stats, you need to authorize the YouTube Data API in my configuration."
             
         if "location of crave" in cmd_lower or "where is crave" in cmd_lower:
-            return "My core system is located at D:\\CRAVE on your local machine."
+            return f"My core system is located at {os.environ.get('CRAVE_ROOT', r'D:\\CRAVE')} on your local machine."
 
         if not self._router:
             return "Model router not ready yet."

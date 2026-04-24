@@ -2,7 +2,7 @@ import requests
 import os
 import time
 
-token_file = r"D:\CRAVE\data\telegram_token.txt"
+token_file = os.path.join(os.environ.get("CRAVE_ROOT", r"D:\CRAVE"), "data", "telegram_token.txt")
 if not os.path.exists(token_file):
     print("Error: Could not find telegram_token.txt")
     exit(1)

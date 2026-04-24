@@ -13,11 +13,11 @@ logger = logging.getLogger("crave.agents.fastsd")
 
 class FastSDAgent:
     def __init__(self):
-        self.fastsd_dir = os.path.join(os.environ.get("CRAVE_ROOT", "D:\\CRAVE"), "tools", "fastsd", "fastsdcpu-main")
+        self.fastsd_dir = os.path.join(os.environ.get("CRAVE_ROOT", r"D:\CRAVE"), "tools", "fastsd", "fastsdcpu-main")
         self.python_exe = os.path.join(self.fastsd_dir, "env", "Scripts", "python.exe")
         self.app_script = os.path.join(self.fastsd_dir, "src", "app.py")
         
-        self.output_dir = os.path.join(os.environ.get("CRAVE_ROOT", "D:\\CRAVE"), "Sub_Projects", "Images")
+        self.output_dir = os.path.join(os.environ.get("CRAVE_ROOT", r"D:\CRAVE"), "Sub_Projects", "Images")
         os.makedirs(self.output_dir, exist_ok=True)
 
     def generate_image(self, prompt: str) -> str:

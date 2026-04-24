@@ -1,4 +1,4 @@
-﻿"""
+"""
 CRAVE v10.0 - Instrument Scanner
 ==================================
 Runs daily at 06:45 UTC after DailyBiasEngine completes.

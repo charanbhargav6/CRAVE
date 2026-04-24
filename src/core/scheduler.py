@@ -21,7 +21,7 @@ class DailyScheduler:
         self.daily_lock = True # By default, high-risk tasks are locked until 8 AM ping
         
         # Determine paths for rotation
-        self.log_dir = os.path.join(os.environ.get("CRAVE_ROOT", "D:\\CRAVE"), "Logs")
+        self.log_dir = os.path.join(os.environ.get("CRAVE_ROOT", r"D:\CRAVE"), "Logs")
         
     def _shred_logs(self):
         """Security: Zeroes out tracking history every 24 hours."""

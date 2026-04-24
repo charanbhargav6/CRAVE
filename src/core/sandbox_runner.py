@@ -26,7 +26,7 @@ class SandboxRunner:
         self.sandbox_base = Path(sandbox_dir or os.path.join(CRAVE_ROOT, ".sandbox"))
         # Use D drive if unspecified or if the target drive is missing
         if str(self.sandbox_base).startswith("C:"):
-            self.sandbox_base = Path(r"D:\CRAVE\.sandbox")
+            self.sandbox_base = Path(os.path.join(os.environ.get("CRAVE_ROOT", r"D:\CRAVE"), ".sandbox"))
             
         os.makedirs(self.sandbox_base, exist_ok=True)
 
@@ -65,8 +65,8 @@ class SandboxRunner:
             shutil.copytree(os.path.join(CRAVE_ROOT, "tests"), sandbox_dir / "tests", ignore=ignore_func)
             shutil.copytree(os.path.join(CRAVE_ROOT, "config"), sandbox_dir / "config", ignore=ignore_func)
             
-            # Copy root files
-            for file in ["requirements.txt", ".env", "main.py"]:
+            # Copy root files (DO NOT COPY .env)
+            for file in ["requirements.txt", "main.py"]:
                 src_file = os.path.join(CRAVE_ROOT, file)
                 if os.path.exists(src_file):
                     shutil.copy2(src_file, sandbox_dir / file)

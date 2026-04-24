@@ -1,3 +1,4 @@
+import os
 """
 CRAVE Phase 12 — Full MCP vs Legacy Agent Benchmark Suite
 ==========================================================
@@ -95,7 +96,7 @@ def test_filesystem():
     def native_vault():
         from src.agents.file_agent import FileAgent
         fa = FileAgent()
-        return fa.read_file("D:\\CRAVE\\data\\vault\\master.key")
+        return fa.read_file(os.path.join(os.environ.get("CRAVE_ROOT", r"D:\CRAVE"), "data", "vault", "master.key"))
     
     def mcp_vault():
         # The MCP config explicitly blocks D:\CRAVE\data\vault

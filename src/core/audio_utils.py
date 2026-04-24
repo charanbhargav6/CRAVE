@@ -21,14 +21,14 @@ def load_config():
     global _cfg_cache
     if _cfg_cache is not None:
         return _cfg_cache
-    cfg_path = os.path.join("D:\\CRAVE", "config", "hardware.json")
+    cfg_path = os.path.join(os.environ.get("CRAVE_ROOT", r"D:\CRAVE"), "config", "hardware.json")
     try:
         with open(cfg_path) as f:
             _cfg_cache = json.load(f)
     except Exception:
         # safe defaults if config missing
         _cfg_cache = {
-            "crave_root": "D:\\CRAVE",
+            "crave_root": os.environ.get("CRAVE_ROOT", r"D:\CRAVE"),
             "whisper": {
                 "short_model": "small",
                 "long_model": "medium",
@@ -46,7 +46,7 @@ def reload_config():
 
 
 def crave_root():
-    return load_config().get("crave_root", "D:\\CRAVE")
+    return load_config().get("crave_root", os.environ.get("CRAVE_ROOT", r"D:\CRAVE"))
 
 
 def models_dir():

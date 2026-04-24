@@ -28,7 +28,7 @@ def _find_crave_root() -> str:
     env_root = os.environ.get("CRAVE_ROOT")
     if env_root and os.path.isdir(env_root):
         return env_root
-    default = "D:\\CRAVE"
+    default = os.environ.get("CRAVE_ROOT", r"D:\CRAVE")
     if os.path.isdir(default):
         return default
     current = Path(__file__).resolve()

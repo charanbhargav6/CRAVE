@@ -15,7 +15,7 @@ import sys
 import logging
 from logging.handlers import RotatingFileHandler
 
-CRAVE_ROOT = os.environ.get("CRAVE_ROOT", "D:\\CRAVE")
+CRAVE_ROOT = os.environ.get("CRAVE_ROOT", r"D:\CRAVE")
 LOGS_DIR = os.path.join(CRAVE_ROOT, "Logs")
 
 

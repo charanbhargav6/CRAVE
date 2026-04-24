@@ -35,8 +35,13 @@ class RBACManager:
         self._last_activity = time.time()
         self._idle_timer = None
         self._idle_lock = threading.Lock()
+        self._stop_event = threading.Event()
         self._load_credentials()
         self._start_idle_timer()
+
+    def shutdown(self):
+        """Cleanly stop the background idle timer."""
+        self._stop_event.set()
 
     # ── idle timer ────────────────────────────────────────────────────────────
 
@@ -47,8 +52,10 @@ class RBACManager:
     def _start_idle_timer(self):
         """Background thread that checks for idle timeout every 30 seconds."""
         def _check_idle():
-            while True:
-                time.sleep(30)
+            while not self._stop_event.is_set():
+                self._stop_event.wait(30)
+                if self._stop_event.is_set():
+                    break
                 with self._idle_lock:
                     elapsed = time.time() - self._last_activity
                     if elapsed >= IDLE_TIMEOUT_SECONDS and self.auth_level > 1:

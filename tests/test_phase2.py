@@ -26,7 +26,7 @@ import time
 import tempfile
 
 # Add project root to path so imports work
-sys.path.insert(0, os.path.join("D:\\CRAVE"))
+sys.path.insert(0, os.path.join(os.environ.get("CRAVE_ROOT", r"D:\CRAVE")
 
 # ─── Colors ─────────────────────────────────────────────────────────────
 GREEN  = "\033[92m"
@@ -103,7 +103,7 @@ except Exception as e:
 # ════════════════════════════════════════════════════════════════════════
 section(1, "Create ModelRouter Instance")
 try:
-    router = ModelRouter(config_path="D:\\CRAVE\\config\\hardware.json")
+    router = ModelRouter(config_path=os.path.join(os.environ.get("CRAVE_ROOT", r"D:\CRAVE"), "config", "hardware.json"))
     ram = router._config.get("ram_gb", "?")
     ok("ModelRouter created", f"RAM={ram}GB, concurrent={router._concurrent}")
     ok(f"Primary model: {router._models[TASK_PRIMARY]}")
@@ -293,7 +293,7 @@ except Exception as e:
     fail(f"Wrong exception type: {type(e).__name__}: {e}")
 
 # Test invalid JSON
-tmp_dir = os.path.join("D:\\CRAVE", "tests", "_tmp")
+tmp_dir = os.path.join(os.environ.get("CRAVE_ROOT", r"D:\CRAVE"), "tests", "_tmp")
 os.makedirs(tmp_dir, exist_ok=True)
 
 bad_json_path = os.path.join(tmp_dir, "bad.json")

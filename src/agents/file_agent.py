@@ -11,8 +11,8 @@ from src.security.rbac import get_rbac
 # Frozen set of blocked paths — checked BEFORE any filesystem operation
 # This provides microsecond denial without touching the disk
 _BLOCKED_PATHS = frozenset([
-    os.path.normpath("D:\\CRAVE\\data\\vault"),
-    os.path.normpath("D:\\CRAVE\\data\\vault\\"),
+    os.path.normpath(os.path.join(os.environ.get("CRAVE_ROOT", r"D:\CRAVE"), "data", "vault")),
+    os.path.normpath(os.path.join(os.environ.get("CRAVE_ROOT", r"D:\CRAVE"), "data", "vault", "")),
 ])
 
 def _is_vault_path(target: str) -> bool:
@@ -26,7 +26,7 @@ def _is_vault_path(target: str) -> bool:
 
 class FileAgent:
     def __init__(self):
-        self.root = Path(os.environ.get("CRAVE_ROOT", "D:\\CRAVE")).resolve()
+        self.root = Path(os.environ.get("CRAVE_ROOT", r"D:\CRAVE").resolve()
         
     def _is_safe_path(self, target_path: str) -> bool:
         """Prevent directory traversal attacks + vault access."""

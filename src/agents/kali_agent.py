@@ -8,6 +8,7 @@ import subprocess
 import threading
 import logging
 import queue
+import shlex
 from src.security.rbac import get_rbac
 
 logger = logging.getLogger("crave.agents.kali")
@@ -31,7 +32,10 @@ class KaliAgent:
         logger.warning(f"Executing offensive command: {cmd}")
         
         # Build the WSL command string safely
-        wsl_cmd = ["wsl", "-d", "kali-linux", "--"] + cmd.split()
+        try:
+            wsl_cmd = ["wsl", "-d", "kali-linux", "--"] + shlex.split(cmd)
+        except ValueError as e:
+            return f"ERROR: Malformed shell command - {e}"
         
         try:
             with self._lock:

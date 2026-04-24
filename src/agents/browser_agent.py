@@ -16,7 +16,7 @@ logger = logging.getLogger("crave.agents.browser")
 class BrowserAgent:
     def __init__(self):
         # Enforce that Playwright uses the localized D: drive browser installation
-        os.environ["PLAYWRIGHT_BROWSERS_PATH"] = os.path.join(os.environ.get("CRAVE_ROOT", "D:\\CRAVE"), "tools", "playwright")
+        os.environ["PLAYWRIGHT_BROWSERS_PATH"] = os.path.join(os.environ.get("CRAVE_ROOT", r"D:\CRAVE"), "tools", "playwright")
         self._lock = threading.Lock()
 
     def scrape_url(self, url: str, wait_for_network_idle: bool = True) -> str:

@@ -24,7 +24,7 @@ class ResearchAgent:
         
         # Determine Knowledge directory
         self.knowledge_dir = os.path.join(
-            os.environ.get("CRAVE_ROOT", "D:\\CRAVE"), "Knowledge", "skills"
+            os.environ.get("CRAVE_ROOT", r"D:\CRAVE"), "Knowledge", "skills"
         )
         if not os.path.exists(self.knowledge_dir):
             os.makedirs(self.knowledge_dir, exist_ok=True)

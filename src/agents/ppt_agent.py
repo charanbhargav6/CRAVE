@@ -16,7 +16,7 @@ logger = logging.getLogger("crave.agents.ppt")
 
 class PPTAgent:
     def __init__(self):
-        self.temp_dir = os.path.join(os.environ.get("CRAVE_ROOT", "D:\\CRAVE"), "data", "temp_ppt")
+        self.temp_dir = os.path.join(os.environ.get("CRAVE_ROOT", r"D:\CRAVE"), "data", "temp_ppt")
         os.makedirs(self.temp_dir, exist_ok=True)
 
     def build_presentation(self, title: str, slides_data: list) -> str:

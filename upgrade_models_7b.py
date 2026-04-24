@@ -23,7 +23,7 @@ import subprocess
 import requests
 
 OLLAMA_URL = "http://127.0.0.1:11434"
-HARDWARE_JSON = os.path.join("D:\\CRAVE", "config", "hardware.json")
+HARDWARE_JSON = os.path.join(os.environ.get("CRAVE_ROOT", r"D:\CRAVE"), "config", "hardware.json")
 
 # ── Models to install and remove ──────────────────────────────────────────────
 NEW_MODELS = {
@@ -54,7 +54,7 @@ def pull_model(model_name: str):
     print(f"{'='*60}")
     
     # Use subprocess to show live progress
-    ollama_path = r"D:\CRAVE\Ollama\App\ollama.exe"
+    ollama_path = os.path.join(os.environ.get("CRAVE_ROOT", r"D:\CRAVE"), "Ollama", "App", "ollama.exe")
     result = subprocess.run(
         f"{ollama_path} pull {model_name}",
         shell=True,
@@ -74,7 +74,7 @@ def remove_model(model_name: str):
     """Remove an old model to free disk space."""
     print(f"  Removing {model_name}...", end=" ")
     try:
-        ollama_path = r"D:\CRAVE\Ollama\App\ollama.exe"
+        ollama_path = os.path.join(os.environ.get("CRAVE_ROOT", r"D:\CRAVE"), "Ollama", "App", "ollama.exe")
         result = subprocess.run(
             f"{ollama_path} rm {model_name}",
             shell=True,
