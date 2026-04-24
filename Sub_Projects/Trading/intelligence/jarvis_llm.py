@@ -79,7 +79,7 @@ class JarvisLLM:
         
         self._model = "gemini-1.5-flash"
         try:
-            hw_path = Path(os.environ.get("CRAVE_ROOT", r"D:\CRAVE") / "config" / "hardware.json"
+            hw_path = Path(os.environ.get("CRAVE_ROOT", r"D:\CRAVE")) / "config" / "hardware.json"
             if hw_path.exists():
                 with open(hw_path, "r", encoding="utf-8") as f:
                     hw = json.load(f)

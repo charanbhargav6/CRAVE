@@ -26,7 +26,7 @@ def _is_vault_path(target: str) -> bool:
 
 class FileAgent:
     def __init__(self):
-        self.root = Path(os.environ.get("CRAVE_ROOT", r"D:\CRAVE").resolve()
+        self.root = Path(os.environ.get("CRAVE_ROOT", r"D:\CRAVE")).resolve()
         
     def _is_safe_path(self, target_path: str) -> bool:
         """Prevent directory traversal attacks + vault access."""

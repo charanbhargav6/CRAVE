@@ -365,12 +365,12 @@ section("14. Models Directory")
 mdir = models_dir()
 if os.path.isdir(mdir):
     contents = os.listdir(mdir)
-    ok(f"{os.path.join(os.environ.get("CRAVE_ROOT", r"D:\CRAVE"), "models", "  exists  ({len(contents)} items)"))
+    ok(f"{mdir}  exists  ({len(contents)} items)")
     if contents:
         for item in contents[:5]:
             ok(f"  Found: {item}")
     else:
-        warn(os.path.join(os.environ.get("CRAVE_ROOT", r"D:\CRAVE"), "models", "  is empty — Whisper will download here on first use"))
+        warn(f"{mdir}  is empty — Whisper will download here on first use")
 else:
     fail(f"{mdir}  not found", "mkdir " + mdir)
 

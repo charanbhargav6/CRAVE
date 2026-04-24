@@ -1,40 +1,36 @@
-# CRAVE Core Requirements
+# ═══════════════════════════════════════════
+# CRAVE Production Dependencies (pinned)
+# ═══════════════════════════════════════════
+# Install: pip install -r requirements.txt
+# Regenerate pins: pip freeze > requirements.txt
 
-# AI & LLMs
-ollama>=0.1.7
-langchain>=0.1.13
-google-generativeai>=0.4.1
-groq>=0.4.2
+# ─── AI & LLMs ───────────────────────────
+ollama==0.4.8
+google-generativeai==0.8.6
+groq==1.1.2
 
-# Vision & Audio
-opencv-python>=4.9.0
-SpeechRecognition>=3.10.1
-pyttsx3>=2.90
-sounddevice>=0.4.6
-whisper>=1.1.10
-onnxruntime>=1.17.1
-openwakeword>=0.6.0
-ctranslate2>=4.1.0
-faster-whisper>=1.0.1
-edge-tts>=6.1.9
-elevenlabs>=0.2.27
+# ─── Vision & Audio ──────────────────────
+opencv-python==4.13.0.86
+SpeechRecognition==3.15.2
+sounddevice==0.5.1
+faster-whisper==1.1.0
+edge-tts==6.1.20
 
-# Data & Web
-requests>=2.31.0
-beautifulsoup4>=4.12.3
-flask>=3.0.2
-pandas>=2.2.1
-yfinance>=0.2.37
-ta>=0.11.0
+# ─── Data & Web ──────────────────────────
+requests==2.33.1
+beautifulsoup4==4.12.3
+pandas==3.0.2
 
-# Security & Utilities
-bcrypt>=4.1.2
-cryptography>=42.0.5
-python-dotenv>=1.0.1
-psutil>=5.9.8
+# ─── Security & Utilities ────────────────
+bcrypt==4.0.1
+cryptography==46.0.7
+python-dotenv==1.1.0
+psutil==7.2.2
 
-# UI
-PyQt6>=6.6.1
-
-# Pentesting / APIs
-shodan>=1.31.0
+# ─── Optional (install if needed) ────────
+# PyQt6==6.9.0          # Desktop UI (not needed on Termux/server)
+# yfinance==0.2.55      # Live market data
+# flask==3.1.1          # Web dashboard
+# langchain==0.3.25     # LLM orchestration
+# shodan==1.31.0        # Security scanning
+# elevenlabs==1.50.0    # Premium TTS

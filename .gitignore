@@ -25,6 +25,7 @@ data/credentials.json.enc
 *.enc
 .env
 .env.*
+!.env.example
 
 # ─── Secrets & OAuth ────────────────────
 config/youtube_client_secret.json

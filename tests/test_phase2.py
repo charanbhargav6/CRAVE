@@ -1,7 +1,7 @@
 """
 CRAVE Phase 2 — Model Router Complete Test Suite
-File: D:\CRAVE\tests\test_model_router.py
-Run:  cd D:\CRAVE && .venv\Scripts\activate && python tests\test_model_router.py
+File: D:\\CRAVE\\tests\\test_model_router.py
+Run:  cd D:\\CRAVE && .venv\\Scripts\\activate && python tests\\test_model_router.py
 
 Tests (13 sections):
    0. Import ModelRouter
@@ -26,7 +26,7 @@ import time
 import tempfile
 
 # Add project root to path so imports work
-sys.path.insert(0, os.path.join(os.environ.get("CRAVE_ROOT", r"D:\CRAVE")
+sys.path.insert(0, os.path.join(os.environ.get("CRAVE_ROOT", r"D:\CRAVE")))
 
 # ─── Colors ─────────────────────────────────────────────────────────────
 GREEN  = "\033[92m"
