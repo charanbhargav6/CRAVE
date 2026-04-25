@@ -462,16 +462,20 @@ class StrategyAgent:
             breakdown["Trend Filter"] = "+0 (Unknown)"
 
         if fvg_hit:
-            points += 15; breakdown["FVG Interaction"] = "+15"
+            points += 10; breakdown["FVG Interaction"] = "+10"
 
         if ob_hit:
-            points += 20; breakdown["Order Block"] = "+20"
-
-        if "CHoCH" in structure or "BOS" in structure:
-            points += 10; breakdown["Market Structure"] = f"+10 ({structure})"
+            points += 10; breakdown["Order Block"] = "+10"
 
         if sweep:
             points += 10; breakdown["Liquidity Sweep"] = "+10"
+
+        # ── Strict 3-Concept Confluence Bonus ──
+        if fvg_hit and ob_hit and sweep:
+            points += 25; breakdown["3-Concept Confluence"] = "+25"
+
+        if "CHoCH" in structure or "BOS" in structure:
+            points += 10; breakdown["Market Structure"] = f"+10 ({structure})"
 
         if (trend == "Bullish" and "DISCOUNT" in pd_zone) or (trend == "Bearish" and "PREMIUM" in pd_zone):
             points += 10; breakdown["Premium/Discount"] = "+10"

@@ -222,7 +222,7 @@ class RegimeClassifier:
         logger.info("[Regime] Starting training...")
 
         try:
-            from sklearn.ensemble import RandomForestClassifier
+            from xgboost import XGBClassifier
             from sklearn.preprocessing import StandardScaler
             from sklearn.model_selection import cross_val_score
             from Sub_Projects.Trading.ml.feature_engineering import get_training_dataframe
@@ -289,13 +289,13 @@ class RegimeClassifier:
             scaler = StandardScaler()
             X_scaled = scaler.fit_transform(X)
 
-            # Train Random Forest
-            model = RandomForestClassifier(
+            # Train XGBoost
+            model = XGBClassifier(
                 n_estimators=100,
-                max_depth=8,
-                min_samples_leaf=5,
-                random_state=42,
-                class_weight="balanced",
+                max_depth=5,
+                learning_rate=0.1,
+                n_jobs=-1,
+                random_state=42
             )
             model.fit(X_scaled, y)
 

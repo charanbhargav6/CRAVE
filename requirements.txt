@@ -20,6 +20,8 @@ edge-tts==6.1.20
 requests==2.33.1
 beautifulsoup4==4.12.3
 pandas==3.0.2
+xgboost==2.0.3
+scikit-learn==1.4.1.post1
 
 # ─── Security & Utilities ────────────────
 bcrypt==4.0.1

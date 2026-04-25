@@ -406,17 +406,18 @@ class TradingLoop:
                               kz_name: str = "") -> Optional[dict]:
         logger.info(f"[TradingLoop] Analysing {symbol} ({kz_name})...")
 
-        # FIX M3: Use WS → cache → REST fallback for all data fetches
+        df_15m = _get_ohlcv_with_ws_fallback(symbol, "15m", 250)
         df_1h = _get_ohlcv_with_ws_fallback(symbol, "1h", 250)
         df_4h = _get_ohlcv_with_ws_fallback(symbol, "4h", 60)
 
-        if df_1h is None or len(df_1h) < 60:
+        if df_15m is None or len(df_15m) < 60 or df_1h is None or len(df_1h) < 60:
             logger.warning(f"[TradingLoop] Insufficient data for {symbol}")
             return None
 
         from Sub_Projects.Trading.strategy_agent import StrategyAgent
         strategy = StrategyAgent()
-        context  = strategy.analyze_market_context(symbol, df_1h)
+        # Execute SMC analysis on the 15m TF for tighter entries
+        context  = strategy.analyze_market_context(symbol, df_15m)
 
         if "error" in context:
             return None
@@ -424,11 +425,11 @@ class TradingLoop:
         confidence   = context.get("Confidence_Pct", 0)
         grade_str    = context.get("Structure_Score", "C")
         macro_trend  = context.get("Macro_Trend", "Unknown")
-        current_price = context.get("Current_Price", df_1h['close'].iloc[-1])
+        current_price = context.get("Current_Price", df_15m['close'].iloc[-1])
 
         if macro_trend == "Unknown":
             self._log_signal(symbol, "skip", "Unknown macro trend",
-                             confidence, grade_str, context, df_1h=df_1h)
+                             confidence, grade_str, context, df_1h=df_15m)
             return None
 
         direction = "buy" if macro_trend == "Bullish" else "sell"
@@ -439,7 +440,7 @@ class TradingLoop:
             b    = bias.get("bias", "NO_TRADE") if bias else "NO_BIAS"
             self._log_signal(symbol, "skip",
                              f"Bias conflict: bias={b} signal={direction}",
-                             confidence, grade_str, context, df_1h=df_1h)
+                             confidence, grade_str, context, df_1h=df_15m)
             return None
 
         grade = None
@@ -457,7 +458,7 @@ class TradingLoop:
         mtf_ok, mtf_reason = check_mtf_confluence(symbol, direction, df_1h, df_4h)
         if not mtf_ok:
             self._log_signal(symbol, "skip", f"MTF conflict: {mtf_reason}",
-                             confidence, grade_str, context, df_1h=df_1h)
+                             confidence, grade_str, context, df_1h=df_15m)
             return None
 
         corr_ok, corr_reason = self._correlation_check(symbol, direction)
@@ -488,7 +489,7 @@ class TradingLoop:
                             self._log_signal(
                                 symbol, "skip",
                                 f"Dead OB: {delta_check['reason']}",
-                                confidence, grade_str, context, df_1h=df_1h
+                                confidence, grade_str, context, df_1h=df_15m
                             )
                             return None
                         if delta_check.get("signal") == "WAIT":
@@ -517,7 +518,7 @@ class TradingLoop:
                     self._log_signal(
                         symbol, "skip",
                         f"Jarvis: {override['reason']}",
-                        confidence, grade_str, context, df_1h=df_1h
+                        confidence, grade_str, context, df_1h=df_15m
                     )
                     return None
                 if action == "HALF_SIZE":
@@ -532,9 +533,29 @@ class TradingLoop:
             logger.debug(f"[TradingLoop] Jarvis check error (non-fatal): {e}")
             self._jarvis_half_size = False
 
+        # ── Pre-calculate Risk Pct BEFORE the portfolio gate ──────────────
+        from Sub_Projects.Trading.risk_agent import RiskAgent
+        from Sub_Projects.Trading.streak_state import streak
+
+        risk_pct = streak.get_current_risk_pct(grade)
+        
+        # If volatile regime → halve size
+        if getattr(self, "_volatile_override", False):
+            risk_pct = round(risk_pct * 0.5, 4)
+            logger.info(
+                f"[TradingLoop] {symbol}: Volatile regime - "
+                f"size halved to {risk_pct:.2f}%"
+            )
+        
+        # If Jarvis flagged half-size (sentiment conflict)
+        if getattr(self, "_jarvis_half_size", False):
+            risk_pct = round(risk_pct * 0.5, 4)
+            logger.info(
+                f"[TradingLoop] {symbol}: Jarvis half-size applied "
+                f"-> {risk_pct:.2f}%"
+            )
+
         # ── Portfolio-level risk gate ─────────────────────────────────────
-        # Cross-market heat, currency exposure, vega limit.
-        # More comprehensive than the per-trade correlation check above.
         try:
             from Sub_Projects.Trading.risk.portfolio_risk_engine import get_portfolio_risk
             pr_ok, pr_reason = get_portfolio_risk().can_add_position(
@@ -543,29 +564,10 @@ class TradingLoop:
             if not pr_ok:
                 logger.info(f"[TradingLoop] {symbol}: Portfolio gate - {pr_reason}")
                 self._log_signal(symbol, "skip", f"Portfolio: {pr_reason}",
-                                 confidence, grade_str, context, df_1h=df_1h)
+                                 confidence, grade_str, context, df_1h=df_15m)
                 return None
         except Exception as e:
             logger.debug(f"[TradingLoop] Portfolio gate error (non-fatal): {e}")
-
-        from Sub_Projects.Trading.risk_agent import RiskAgent
-        from Sub_Projects.Trading.streak_state import streak
-
-        risk_pct = streak.get_current_risk_pct(grade)
-        # If volatile regime → halve size
-        if self._volatile_override:
-            risk_pct = round(risk_pct * 0.5, 4)
-            logger.info(
-                f"[TradingLoop] {symbol}: Volatile regime - "
-                f"size halved to {risk_pct:.2f}%"
-            )
-        # If Jarvis flagged half-size (sentiment conflict)
-        if getattr(self, "_jarvis_half_size", False):
-            risk_pct = round(risk_pct * 0.5, 4)
-            logger.info(
-                f"[TradingLoop] {symbol}: Jarvis half-size applied "
-                f"-> {risk_pct:.2f}%"
-            )
 
         risk_agent = RiskAgent()
         risk_agent.max_risk_per_trade = risk_pct / 100
@@ -582,7 +584,7 @@ class TradingLoop:
         validated = risk_agent.validate_trade_signal(
             current_equity = equity,
             signal         = signal_dict,
-            df             = df_1h,
+            df             = df_15m,
             confidence_pct = confidence,
         )
 
