@@ -1,7 +1,6 @@
 """
 CRAVE Phase 4 - Orchestrator Verification
-Save to: D:\\Crave\\tests\\test_phase4.py
-Run:     cd D:\\Crave  then  .venv\\Scripts\\activate  then  python tests\test_phase4.py
+Run:     cd $CRAVE_ROOT  then  .venv\\Scripts\\activate  then  python tests\test_phase4.py
 """
 
 import sys
@@ -10,7 +9,7 @@ import time
 import json
 import threading
 
-sys.path.insert(0, os.path.join("D:\\Crave", "src"))
+sys.path.insert(0, os.path.join(os.environ.get("CRAVE_ROOT", r"D:\CRAVE"), "src"))
 
 GREEN  = "\033[92m"
 RED    = "\033[91m"
@@ -47,7 +46,7 @@ def section(title):
     print(f"{BOLD}{BLUE}  {title}{RESET}")
     print(f"{BOLD}{BLUE}{chr(9472)*60}{RESET}")
 
-CRAVE = "D:" + SEP + "Crave"
+CRAVE = os.environ.get("CRAVE_ROOT", "D:" + SEP + "CRAVE")
 
 print(f"\n{BOLD}{'='*62}")
 print("   CRAVE 2026  -  Phase 4 Orchestrator Verification")

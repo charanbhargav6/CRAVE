@@ -114,7 +114,7 @@ def test_filesystem():
     record("Security", "Vault Barrier", t_nv, t_mv, 
            "PASS" if vault_native_blocked else "FAIL",
            "PASS" if vault_mcp_blocked else "FAIL",
-           "Both systems must block access to D:\\CRAVE\\data\\vault")
+           "Both systems must block access to $CRAVE_ROOT/data/vault")
 
 
 # ══════════════════════════════════════════════════════════════════════════════

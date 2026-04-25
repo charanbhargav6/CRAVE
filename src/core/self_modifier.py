@@ -102,15 +102,16 @@ class SelfModifier:
         models = self._get_best_coders()
         logger.info(f"[SelfModifier] Using models for consensus: {models}")
 
+        crave_root = os.environ.get("CRAVE_ROOT", r"D:\CRAVE")
         prompt = f"""You are the CRAVE Self-Evolution Engine.
 Your task is to modify the codebase to implement this feature:
 {task_description}
 
 System architecture:
-- D:\\CRAVE\\src\\core\\ (orchestrator, router, etc)
-- D:\\CRAVE\\src\\agents\\ (task specific tools)
-- D:\\CRAVE\\src\\security\\ (rbac, face_id)
-- D:\\CRAVE\\config\\ (json settings)
+- {crave_root}\\src\\core\\ (orchestrator, router, etc)
+- {crave_root}\\src\\agents\\ (task specific tools)
+- {crave_root}\\src\\security\\ (rbac, face_id)
+- {crave_root}\\config\\ (json settings)
 
 Return ONLY a JSON array of file edits. DO NOT return the entire file content. Use `search` and `replace` block diffs.
 Format:

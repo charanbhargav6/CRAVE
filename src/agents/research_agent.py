@@ -3,7 +3,7 @@ CRAVE Phase 9 - Self-Learning & Research Engine (ResearchAgent)
 Automates the discovery of new capabilities. It takes a massive query ("Learn MT5"),
 mutes the local Voice system to conserve CPU context, invokes blazing fast API Models
 via the ModelRouter, and perfectly formats the newly gained intelligence into 
-a SKILL.md Markdown file in the D:\\CRAVE\\Knowledge\\skills\\ directory.
+a SKILL.md Markdown file in the $CRAVE_ROOT/Knowledge/skills/ directory.
 """
 
 import os

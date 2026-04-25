@@ -26,7 +26,7 @@ class FastSDAgent:
         Returns the absolute path to the generated PNG.
         """
         if not os.path.exists(self.python_exe):
-            return "ERROR: FastSD environment not configured. Please run install.bat in D:\\CRAVE\\tools\\fastsd\\fastsdcpu-main first."
+            return f"ERROR: FastSD environment not configured. Please run install.bat in {self.fastsd_dir} first."
 
         logger.info(f"Generating FastSD image for prompt: {prompt[:50]}...")
         
