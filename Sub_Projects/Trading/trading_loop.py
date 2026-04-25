@@ -97,23 +97,84 @@ def _get_session_name(hour_utc: int) -> str:
 
 def check_mtf_confluence(symbol: str, direction: str,
                            df_1h, df_4h) -> tuple:
+    """
+    Multi-timeframe gate using 4H market structure (BOS/CHoCH).
+
+    Logic:
+      1. Detect swing highs/lows on 4H chart.
+      2. Check if the most recent confirmed close broke a swing level.
+      3. Buy signals require 4H bullish structure (BOS/CHoCH bullish).
+         Sell signals require 4H bearish structure.
+      4. Ranging 4H = fallback to EMA21 trend filter.
+    """
     try:
         import pandas as pd
-        if df_4h is None or len(df_4h) < 10:
+        if df_4h is None or len(df_4h) < 20:
             return True, "4H data unavailable - passing by default"
 
-        close_4h    = df_4h['close'].iloc[-1]
-        ema21_4h    = df_4h['close'].ewm(span=21, adjust=False).mean().iloc[-1]
-        above_ema21 = close_4h > ema21_4h
+        # ── Swing detection on 4H ──
+        window = 3
+        highs, lows = [], []
+        for i in range(window, len(df_4h) - window):
+            if df_4h['high'].iloc[i] == df_4h['high'].iloc[i - window: i + window + 1].max():
+                highs.append((i, df_4h['high'].iloc[i]))
+            if df_4h['low'].iloc[i] == df_4h['low'].iloc[i - window: i + window + 1].min():
+                lows.append((i, df_4h['low'].iloc[i]))
+
+        if len(highs) < 2 or len(lows) < 2:
+            # Not enough structure — fallback to EMA21
+            close_4h = df_4h['close'].iloc[-1]
+            ema21_4h = df_4h['close'].ewm(span=21, adjust=False).mean().iloc[-1]
+            above = close_4h > ema21_4h
+            if direction in ("buy", "long"):
+                return above, f"4H EMA21 fallback: {'above' if above else 'below'} ({ema21_4h:.5f})"
+            else:
+                return not above, f"4H EMA21 fallback: {'below' if not above else 'above'} ({ema21_4h:.5f})"
+
+        last_high  = highs[-1][1]
+        prev_high  = highs[-2][1]
+        last_low   = lows[-1][1]
+        prev_low   = lows[-2][1]
+        confirmed  = df_4h['close'].iloc[-1]
+
+        # ── Structure break detection ──
+        bullish_bos  = confirmed > last_high        # BOS bullish
+        bearish_bos  = confirmed < last_low          # BOS bearish
+        choch_bull   = confirmed > last_high and prev_high > highs[-1][1]  # CHoCH reversal up
+        choch_bear   = confirmed < last_low  and prev_low  < lows[-1][1]   # CHoCH reversal down
+
+        # Higher highs / lower lows trend
+        hh = last_high > prev_high  # higher high
+        ll = last_low  < prev_low   # lower low
+        hl = last_low  > prev_low   # higher low
+        lh = last_high < prev_high  # lower high
+
+        structure_bullish = bullish_bos or choch_bull or (hh and hl)
+        structure_bearish = bearish_bos or choch_bear or (ll and lh)
 
         if direction in ("buy", "long"):
-            if above_ema21:
-                return True, f"4H bullish: price above EMA21 ({ema21_4h:.5f})"
-            return False, f"4H bearish: price below EMA21 ({ema21_4h:.5f})"
+            if structure_bullish:
+                reason = "4H BOS/CHoCH BULLISH"
+                if hh and hl:
+                    reason = "4H HH+HL structure BULLISH"
+                return True, reason
+            if structure_bearish:
+                return False, "4H structure BEARISH — conflicts with buy"
+            # Ranging — fallback to EMA21
+            ema21_4h = df_4h['close'].ewm(span=21, adjust=False).mean().iloc[-1]
+            above = confirmed > ema21_4h
+            return above, f"4H ranging, EMA21 fallback: {'bullish' if above else 'bearish'}"
         else:
-            if not above_ema21:
-                return True, f"4H bearish: price below EMA21 ({ema21_4h:.5f})"
-            return False, f"4H bullish: conflicts with short signal"
+            if structure_bearish:
+                reason = "4H BOS/CHoCH BEARISH"
+                if ll and lh:
+                    reason = "4H LL+LH structure BEARISH"
+                return True, reason
+            if structure_bullish:
+                return False, "4H structure BULLISH — conflicts with sell"
+            ema21_4h = df_4h['close'].ewm(span=21, adjust=False).mean().iloc[-1]
+            below = confirmed < ema21_4h
+            return below, f"4H ranging, EMA21 fallback: {'bearish' if below else 'bullish'}"
 
     except Exception as e:
         logger.debug(f"[Loop] MTF gate error: {e}")
@@ -460,6 +521,36 @@ class TradingLoop:
             self._log_signal(symbol, "skip", f"MTF conflict: {mtf_reason}",
                              confidence, grade_str, context, df_1h=df_15m)
             return None
+
+        # ── Economic Calendar No-Trade Window ─────────────────────────────
+        # Hard-block new entries within 30min of a high-impact event.
+        # The EventHedgeManager handles EXISTING positions; this blocks NEW ones.
+        try:
+            from Sub_Projects.Trading.data_agent import DataAgent
+            from Config.config import get_instrument
+            da   = DataAgent()
+            inst = get_instrument(symbol)
+            ccys = inst.get("currencies", ["USD"])
+
+            for ccy in ccys:
+                result = da.check_red_folder(
+                    currencies=(ccy,), window_mins=30
+                )
+                if result.get("is_danger"):
+                    event_name = result.get("event_name", "Unknown")
+                    mins_away  = result.get("time_to_event_mins", 0)
+                    logger.info(
+                        f"[TradingLoop] {symbol}: NO-TRADE WINDOW — "
+                        f"{event_name} ({ccy}) in {mins_away}min"
+                    )
+                    self._log_signal(
+                        symbol, "skip",
+                        f"Econ calendar: {event_name} in {mins_away}min",
+                        confidence, grade_str, context, df_1h=df_15m
+                    )
+                    return None
+        except Exception as e:
+            logger.debug(f"[TradingLoop] Econ calendar check error (non-fatal): {e}")
 
         corr_ok, corr_reason = self._correlation_check(symbol, direction)
         if not corr_ok:
