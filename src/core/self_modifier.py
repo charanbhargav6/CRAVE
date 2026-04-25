@@ -215,7 +215,27 @@ Respond with valid JSON only."""
         if not self.git.create_branch(branch_name):
             return "Failed to create safety branch."
 
-        # 2.5 AST Safety Check
+        # 2.5 GAN Refinement — improve generated code before testing
+        try:
+            from src.core.gan_refiner import refine as gan_refine
+            if self._router:
+                for mod in modifications:
+                    code = mod.get("code", "")
+                    if code and len(code) > 50:
+                        gan_result = gan_refine(
+                            task=f"Improve this Python code for: {task_description}\n\n{code}",
+                            rubric="Correct Python syntax, no while True loops, no dangerous OS calls, handles edge cases, clean style",
+                            router=self._router,
+                            rounds=2,
+                            pass_threshold=7,
+                        )
+                        if gan_result.get("passed") and gan_result.get("final_output"):
+                            mod["code"] = gan_result["final_output"]
+                            logger.info(f"[SelfModifier] GAN refined {mod.get('file')} (scores: {gan_result['scores']})")
+        except Exception as e:
+            logger.debug(f"[SelfModifier] GAN refinement skipped: {e}")
+
+        # 2.6 AST Safety Check
         logger.info("[SelfModifier] 🔍 Running AST static analysis...")
         ast_ok, ast_msg = self._verify_ast(modifications)
         if not ast_ok:
@@ -326,4 +346,25 @@ Test Output Preview:
         except Exception as e:
             logger.error(f"[SelfModifier] Fatal error during merge: {e}")
             self.git.rollback(base_commit)
+
+            # Lock error class after 3 failed modifications
+            try:
+                from src.core.auto_heal_tracker import lock_error
+                error_class = type(e).__name__
+                lock_error(error_class, hours=24)
+            except Exception:
+                pass
+
+            # Telegram alert on failure
+            try:
+                from Sub_Projects.Trading.telegram_interface import tg
+                tg.send(
+                    f"❌ <b>SELF-MODIFICATION FAILED</b>\n"
+                    f"Task: {task_description[:80]}\n"
+                    f"Error: {e}\n"
+                    f"Action: Rolled back safely."
+                )
+            except Exception:
+                pass
+
             return f"Fatal error. Rolled back safely. {e}"

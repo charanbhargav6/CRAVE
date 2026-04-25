@@ -47,6 +47,7 @@ SETUP:
 
 import os
 import logging
+import sqlite3
 import threading
 import time
 import uuid
@@ -77,6 +78,14 @@ class APISentinel:
         self._session_prefix = f"CRV-{uuid.uuid4().hex[:8].upper()}"
         self._order_counter  = 0
 
+        # ── SQLite persistence for known order IDs ────────────────────────
+        crave_root = os.environ.get("CRAVE_ROOT", r"D:\CRAVE")
+        db_dir = os.path.join(crave_root, "data")
+        os.makedirs(db_dir, exist_ok=True)
+        self._db_path = os.path.join(db_dir, "sentinel_orders.db")
+        self._init_db()
+        self._load_known_orders()
+
         logger.info(
             f"[Sentinel] Initialised. "
             f"Session prefix: {self._session_prefix} | "
@@ -87,6 +96,41 @@ class APISentinel:
     # ─────────────────────────────────────────────────────────────────────────
     # ORDER ID GENERATION
     # ─────────────────────────────────────────────────────────────────────────
+
+    def _init_db(self):
+        """Create the sentinel orders table if it doesn't exist."""
+        con = sqlite3.connect(self._db_path)
+        con.execute(
+            "CREATE TABLE IF NOT EXISTS known_orders "
+            "(order_id TEXT PRIMARY KEY, created_at TEXT)"
+        )
+        con.commit()
+        con.close()
+
+    def _load_known_orders(self):
+        """Load persisted order IDs from SQLite on startup."""
+        try:
+            con = sqlite3.connect(self._db_path)
+            rows = con.execute("SELECT order_id FROM known_orders").fetchall()
+            con.close()
+            self._known_order_ids = {r[0] for r in rows}
+            if self._known_order_ids:
+                logger.info(f"[Sentinel] Loaded {len(self._known_order_ids)} known orders from DB.")
+        except Exception as e:
+            logger.warning(f"[Sentinel] Failed to load orders DB: {e}")
+
+    def _persist_order(self, order_id: str):
+        """Save a single order ID to SQLite."""
+        try:
+            con = sqlite3.connect(self._db_path)
+            con.execute(
+                "INSERT OR IGNORE INTO known_orders (order_id, created_at) VALUES (?, ?)",
+                (order_id, datetime.now(timezone.utc).isoformat()),
+            )
+            con.commit()
+            con.close()
+        except Exception as e:
+            logger.debug(f"[Sentinel] DB persist failed: {e}")
 
     def generate_order_id(self) -> str:
         """
@@ -102,11 +146,13 @@ class APISentinel:
         self._order_counter += 1
         oid = f"{self._session_prefix}-{self._order_counter:04d}"
         self._known_order_ids.add(oid)
+        self._persist_order(oid)
         return oid
 
     def register_known_order(self, order_id: str):
         """Register an order we know about (placed by us)."""
         self._known_order_ids.add(order_id)
+        self._persist_order(order_id)
 
     # ─────────────────────────────────────────────────────────────────────────
     # BACKGROUND MONITORING

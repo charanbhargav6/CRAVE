@@ -247,7 +247,7 @@ class RegimeClassifier:
                                 and c not in ("regime_label",)]
                 X_check = df[numeric_cols].fillna(0).values
                 iso     = IsolationForest(
-                    contamination=0.05,
+                    contamination=min(0.05, max(0.01, 10 / len(df))),  # Scale with dataset size
                     random_state=42,
                     n_jobs=-1,
                 )
@@ -326,6 +326,23 @@ class RegimeClassifier:
             except Exception:
                 pass
 
+            # Log feature importances to neural_memory
+            try:
+                importances = dict(zip(feature_cols, model.feature_importances_))
+                importances = dict(sorted(importances.items(), key=lambda x: x[1], reverse=True))
+                from src.core.neural_memory import NeuralMemory
+                nm = NeuralMemory()
+                nm.store("regime_feature_importances", {
+                    "importances": importances,
+                    "cv_accuracy": float(cv_scores.mean()),
+                    "n_rows": len(df),
+                    "trained_at": datetime.now(timezone.utc).isoformat(),
+                })
+                top3 = list(importances.items())[:3]
+                logger.info(f"[Regime] Top 3 features: {top3}")
+            except Exception as e:
+                logger.debug(f"[Regime] Feature importance logging failed: {e}")
+
             return True
 
         except ImportError:
@@ -340,27 +357,33 @@ class RegimeClassifier:
 
     def _label_regime(self, row) -> int:
         """
-        Derive regime label from trade features and outcome.
-        This is a heuristic — we're using R-multiples as a proxy for regime.
+        Derive regime label from trade features using session-tagged ground truth.
+        Uses actual EMA alignment + ATR state at TRADE CLOSE (not entry).
 
-        High positive R + bullish trend → TRENDING_UP  (0)
-        High positive R + bearish trend → TRENDING_DOWN (1)
-        Near-zero R (win or lose small) → RANGING (2)
-        Extreme ATR expansion           → VOLATILE (3)
+        Session-tagged labeling (ground truth):
+          TRENDING_UP:   EMA21>EMA50>EMA200 at close AND positive R
+          TRENDING_DOWN: EMA21<EMA50<EMA200 at close AND positive R
+          VOLATILE:      ATR expansion >1.4 at close
+          RANGING:       everything else
         """
-        r            = row.get("r_multiple", 0)
-        trend        = row.get("macro_trend", 0)
-        atr_exp      = row.get("atr_expansion", 1.0)
+        atr_exp = row.get("atr_expansion", 1.0)
 
         if atr_exp > 1.4:
             return 3   # VOLATILE
 
-        if r >= 1.5 and trend == 1:
+        # Use EMA alignment at close as ground truth signal
+        ema21 = row.get("ema21_close", row.get("ema21", 0))
+        ema50 = row.get("ema50_close", row.get("ema50", 0))
+        ema200 = row.get("ema200_close", row.get("ema200", 0))
+        r = row.get("r_multiple", 0)
+
+        # Session-tagged: EMA alignment at close + positive R confirms the regime
+        if ema21 > ema50 > ema200 and r > 0:
             return 0   # TRENDING_UP
-        if r >= 1.5 and trend == -1:
+        if ema21 < ema50 < ema200 and r > 0:
             return 1   # TRENDING_DOWN
 
-        return 2   # RANGING (default for average trades)
+        return 2   # RANGING (default for ambiguous/negative trades)
 
     def _features_to_array(self, features: dict):
         """Convert features dict to scaled array for prediction."""

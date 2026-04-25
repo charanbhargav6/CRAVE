@@ -15,11 +15,30 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".
 from cryptography.fernet import Fernet
 from dotenv import dotenv_values
 
-try:
-    import win32crypt
-except ImportError:
-    print("[Vault] ERROR: pywin32 not installed! Run `pip install pywin32`")
-    sys.exit(1)
+import platform
+
+_USE_DPAPI = False
+_USE_KEYRING = False
+
+if platform.system() == "Windows":
+    try:
+        import win32crypt
+        _USE_DPAPI = True
+    except ImportError:
+        pass
+
+if not _USE_DPAPI:
+    try:
+        import keyring
+        _USE_KEYRING = True
+    except ImportError:
+        pass
+
+if not _USE_DPAPI and not _USE_KEYRING:
+    print("[Vault] WARNING: No secure key storage available.")
+    print("  Windows: pip install pywin32")
+    print("  Linux/macOS: pip install keyring")
+    # Don't sys.exit — allow degraded operation with file-based key
 
 # Dedicated logging for the security vault
 logger = logging.getLogger("crave.security.encryption")
@@ -75,40 +94,59 @@ class CRAVEEncryption:
 
     def _get_or_create_key(self) -> bytes:
         """
-        Loads the master key from disk and decrypts it via Windows DPAPI.
-        If it doesn't exist, generates a new Fernet key and encrypts it via DPAPI.
+        Loads or creates the master Fernet key using the best available backend:
+          1. Windows DPAPI (win32crypt) — key is locked to the current Windows user
+          2. OS keyring (keyring lib)   — works on Linux/macOS/WSL
+          3. Raw file fallback          — least secure, for environments without either
         """
-        if os.path.exists(MASTER_KEY_PATH):
+        KEYRING_SERVICE = "crave-vault"
+        KEYRING_ACCOUNT = "master-key"
+
+        # ── Try loading an existing key ──────────────────────────────────
+        if _USE_DPAPI and os.path.exists(MASTER_KEY_PATH):
             try:
                 with open(MASTER_KEY_PATH, "rb") as f:
                     encrypted_key = f.read()
-                # Unprotect DPAPI
-                # Returns (description, raw_bytes)
                 _, raw_key = win32crypt.CryptUnprotectData(encrypted_key, None, None, None, 0)
                 return raw_key
             except Exception as e:
-                logger.critical("FATAL: Failed to decrypt master key. Are you logged in as the correct Windows user? Error: %s", e)
+                logger.critical("DPAPI decryption failed (wrong Windows user?): %s", e)
                 raise PermissionError("DPAPI Decryption failed. Cannot access CRAVE Vault.")
 
-        # Create a new raw Fernet key
+        if _USE_KEYRING:
+            stored = keyring.get_password(KEYRING_SERVICE, KEYRING_ACCOUNT)
+            if stored:
+                logger.info("Master key loaded from OS keyring.")
+                return stored.encode("utf-8")
+
+        # Raw file fallback (unencrypted — least secure)
+        raw_key_path = os.path.join(VAULT_DIR, ".master_key.raw")
+        if os.path.exists(raw_key_path):
+            with open(raw_key_path, "rb") as f:
+                logger.warning("Master key loaded from RAW FILE (not encrypted at rest).")
+                return f.read()
+
+        # ── No existing key — generate and store ─────────────────────────
         logger.info("Generating NEW master key...")
         new_key = Fernet.generate_key()
-        
-        # Encrypt the new key using Windows DPAPI
-        description = "CRAVE Master Vault Key"
-        encrypted_key = win32crypt.CryptProtectData(new_key, description, None, None, None, 0)
-        
-        # Save the DPAPI encrypted blob to disk
-        with open(MASTER_KEY_PATH, "wb") as f:
-            f.write(encrypted_key)
-            
-        # Hide the file so it doesn't clutter
-        try:
-            os.system(f'attrib +h "{MASTER_KEY_PATH}"')
-        except:
-            pass
-            
-        logger.info("Master key generated and locked to current Windows User via DPAPI.")
+
+        if _USE_DPAPI:
+            encrypted_key = win32crypt.CryptProtectData(new_key, "CRAVE Master Vault Key", None, None, None, 0)
+            with open(MASTER_KEY_PATH, "wb") as f:
+                f.write(encrypted_key)
+            try:
+                os.system(f'attrib +h "{MASTER_KEY_PATH}"')
+            except Exception:
+                pass
+            logger.info("Master key locked to current Windows user via DPAPI.")
+        elif _USE_KEYRING:
+            keyring.set_password(KEYRING_SERVICE, KEYRING_ACCOUNT, new_key.decode("utf-8"))
+            logger.info("Master key stored in OS keyring.")
+        else:
+            with open(raw_key_path, "wb") as f:
+                f.write(new_key)
+            os.chmod(raw_key_path, 0o600)  # Owner read/write only
+            logger.warning("Master key saved as RAW FILE (chmod 600). Install keyring for better security.")
         return new_key
 
     def encrypt_file(self, source: str, dest: str) -> bool:

@@ -561,16 +561,39 @@ class Orchestrator:
             logger = logging.getLogger("crave.orchestrator")
             err_msg = traceback.format_exc()
             logger.error(f"Handler failed:\n{err_msg}")
-            
-            # Auto-Recovery via Self-Modifier ("Automatic upgradability based on mistakes")
-            auto_task = f"Fix crashing bug in '{handler.__name__}'. Exception: {e}"
-            response = (f"I encountered a critical error: {e}. "
-                        f"However, I am automatically invoking my Self-Evolution Engine to write a patch for my own code. "
-                        f"I will test the fix in a secure sandbox and ask for your confirmation shortly.")
-            
-            # Trigger it asynchronously
-            import threading
-            threading.Thread(target=self._handle_self_modify, args=({"command": auto_task},), daemon=True).start()
+
+            # ── Auto-Heal: Track errors and only self-modify after 3+ repeats ──
+            error_class = type(e).__name__
+            try:
+                from src.core.auto_heal_tracker import record_error, is_locked, get_attempt_count
+
+                if is_locked(error_class):
+                    logger.info(f"[AutoHeal] '{error_class}' is locked — skipping self-mod")
+                    response = (f"I encountered an error: {e}. "
+                                f"Self-modification for this error type is currently locked (24h cooldown).")
+                else:
+                    count = record_error(error_class, err_msg)
+                    if count >= 3:
+                        auto_task = f"Fix crashing bug in '{handler.__name__}'. Exception: {e}"
+                        response = (f"I encountered a critical error: {e}. "
+                                    f"This error has occurred {count} times. "
+                                    f"Invoking Self-Evolution Engine to write a patch.")
+                        import threading
+                        threading.Thread(
+                            target=self._handle_self_modify,
+                            args=({"command": auto_task},),
+                            daemon=True,
+                        ).start()
+                    else:
+                        response = (f"I encountered an error: {e}. "
+                                    f"Occurrence {count}/3 — will attempt auto-fix after 3 repeats.")
+            except ImportError:
+                # Fallback if auto_heal_tracker not available
+                auto_task = f"Fix crashing bug in '{handler.__name__}'. Exception: {e}"
+                response = (f"I encountered a critical error: {e}. "
+                            f"Invoking Self-Evolution Engine to write a patch.")
+                import threading
+                threading.Thread(target=self._handle_self_modify, args=({"command": auto_task},), daemon=True).start()
 
         # Update context
         self._context.append({"role": "user",      "content": text})

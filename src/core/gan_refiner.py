@@ -107,7 +107,7 @@ def refine(
         gen_res = router.chat(
             prompt=gen_prompt,
             system_prompt="You are a professional content generator. Write excellent content.",
-            task_type="reasoning"
+            task_type="primary"  # Generator uses primary model
         )
         current_output = gen_res.get("response", "").strip()
 
@@ -124,7 +124,7 @@ def refine(
         eval_res = router.chat(
             prompt=eval_prompt,
             system_prompt="You are a strict quality evaluator. Judge content against the rubric.",
-            task_type="reasoning"
+            task_type="reasoning"  # Evaluator uses reasoning model (different from generator)
         )
         eval_text = eval_res.get("response", "")
 
@@ -142,12 +142,27 @@ def refine(
         # Extract feedback for next round
         feedback = eval_text
 
-    return {
+    result = {
         "final_output": current_output,
         "rounds_used": len(scores),
         "scores": scores,
         "passed": passed,
     }
+
+    # ── Telegram alert ────────────────────────────────────────────────────
+    try:
+        from Sub_Projects.Trading.telegram_interface import tg
+        emoji = "✅" if passed else "❌"
+        score_str = " → ".join(str(s) for s in scores)
+        tg.send(
+            f"{emoji} <b>GAN REFINER {'PASSED' if passed else 'FAILED'}</b>\n"
+            f"Task: {task[:80]}...\n"
+            f"Rounds: {len(scores)}/{rounds} | Scores: {score_str}"
+        )
+    except Exception:
+        pass
+
+    return result
 
 
 def _extract_score(eval_text: str) -> int:
@@ -162,4 +177,4 @@ def _extract_score(eval_text: str) -> int:
                 return int(float(num_str))
             except (ValueError, IndexError):
                 continue
-    return 5  # Default if parsing fails
+    return 0  # Parse failed → score 0 (never ghost-pass)

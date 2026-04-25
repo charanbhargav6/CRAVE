@@ -7,8 +7,8 @@ import {
 } from "recharts";
 
 // ── CONFIG — replace with your Supabase values ──────────────────────────────
-const SUPABASE_URL  = "https://YOUR_PROJECT.supabase.co";
-const SUPABASE_ANON = "YOUR_ANON_KEY";
+const SUPABASE_URL  = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://YOUR_PROJECT.supabase.co";
+const SUPABASE_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "YOUR_ANON_KEY";
 const supabase      = createClient(SUPABASE_URL, SUPABASE_ANON);
 
 // ── DESIGN SYSTEM ─────────────────────────────────────────────────────────
