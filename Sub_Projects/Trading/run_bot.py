@@ -60,7 +60,12 @@ def setup_logging():
     handlers = []
 
     if LOG_CFG.get("log_to_console", True):
-        h = logging.StreamHandler()
+        import sys, io
+        # Force UTF-8 on Windows to prevent emoji UnicodeEncodeError
+        if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
+            sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+            sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
+        h = logging.StreamHandler(stream=sys.stdout)
         h.setFormatter(logging.Formatter(
             "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
             datefmt="%H:%M:%S"
@@ -105,15 +110,15 @@ def detect_node() -> str:
 
 def print_banner(node: str, mode: str):
     print(f"""
-╔══════════════════════════════════════════════════════╗
-║                 CRAVE v10.0                          ║
-║          Smart Money Trading System                  ║
-╠══════════════════════════════════════════════════════╣
-║  Node     : {node:<42}║
-║  Mode     : {mode:<42}║
-║  Time     : {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC'):<42}║
-║  Python   : {sys.version.split()[0]:<42}║
-╚══════════════════════════════════════════════════════╝
++======================================================+
+|                 CRAVE v10.0                          |
+|          Smart Money Trading System                  |
++======================================================+
+|  Node     : {node:<42}|
+|  Mode     : {mode:<42}|
+|  Time     : {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC'):<42}|
+|  Python   : {sys.version.split()[0]:<42}|
++======================================================+
     """)
 
 
