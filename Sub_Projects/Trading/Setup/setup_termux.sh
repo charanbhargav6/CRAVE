@@ -43,7 +43,6 @@ pkg install -y -q \
 
 # ── 3. Python packages (lightweight — phone-optimised) ───────────────────────
 echo -e "${YELLOW}[3/9] Installing Python packages (phone-optimised)...${NC}"
-pip install --upgrade pip --break-system-packages -q || true
 
 # Phone version: lighter subset — no ML, no heavy backtest
 # Note: pandas and numpy are installed via pkg to prevent hours of compiling on phone
@@ -54,7 +53,6 @@ pip install --break-system-packages -q \
     ccxt \
     schedule \
     pytz \
-    psutil \
     websockets
 
 echo "  Packages installed (phone-optimised set)."
