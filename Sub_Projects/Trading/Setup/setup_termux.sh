@@ -39,6 +39,7 @@ pkg install -y -q \
     libcrypt \
     python-numpy \
     python-pandas \
+    python-cryptography \
     2>/dev/null
 
 # ── 3. Python packages (lightweight — phone-optimised) ───────────────────────
