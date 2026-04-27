@@ -55,6 +55,17 @@ DB_PATH        = DATABASE_DIR / "crave.db"
 #   ALPACA_PAPER_URL      — https://paper-api.alpaca.markets (stocks paper)
 #   POLYGON_API_KEY       — optional: better US market data than Alpaca
 #   TRADING_MODE          — paper / live (default: paper)
+#
+# NEW (Session 10):
+#   PROP_FIRM             — Name of the prop firm (e.g. ftmo, the5ers). Default: ftmo
+#   ACCOUNT_SIZE          — Account size. Default: 100000
+# ─────────────────────────────────────────────────────────────────────────────
+
+PROP_FIRM = os.environ.get("PROP_FIRM", "ftmo").lower()
+try:
+    ACCOUNT_SIZE = float(os.environ.get("ACCOUNT_SIZE", "100000"))
+except ValueError:
+    ACCOUNT_SIZE = 100000.0
 
 # ─────────────────────────────────────────────────────────────────────────────
 # NODE DETECTION
@@ -435,6 +446,20 @@ RISK = {
     "weekend_close_time_utc":      "20:00",
     "stale_trade_hours":           48,
     "stale_sl_compress_pct":       25,
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CONFIDENCE GATES
+# ─────────────────────────────────────────────────────────────────────────────
+
+CONFIDENCE_GATES = {
+    "BTCUSDT": 0.55,
+    "ETHUSDT": 0.55,
+    "EURUSD=X": 0.55,
+    "XAUUSD=X": 0.60,
+    "NIFTY50": 0.65,
+    "SPY": 0.65,
+    "default": 0.50,
 }
 
 # ─────────────────────────────────────────────────────────────────────────────

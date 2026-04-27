@@ -37,9 +37,16 @@ pkg install -y -q \
     libandroid-support \
     libjpeg-turbo \
     libcrypt \
+    libffi \
+    openssl \
+    rust \
+    make \
+    cmake \
     python-numpy \
     python-pandas \
     python-cryptography \
+    python-aiohttp \
+    python-cffi \
     2>/dev/null
 
 # ── 3. Python packages (lightweight — phone-optimised) ───────────────────────

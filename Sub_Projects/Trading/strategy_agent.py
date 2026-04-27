@@ -501,7 +501,7 @@ class StrategyAgent:
     # ── 10. MASTER ANALYSIS ───────────────────────────────────────────────────
 
     def analyze_market_context(self, symbol: str, df: pd.DataFrame, macro_news: str = "") -> dict:
-        logger.info(f"[StrategyAgent] Full SMC + Structure analysis for {symbol}...")
+        logger.debug(f"[StrategyAgent] Full SMC + Structure analysis for {symbol}...")
 
         if df is None or len(df) < 20:
             return {"error": "Insufficient data for analysis."}

@@ -46,6 +46,11 @@ from typing import Optional, List
 
 logger = logging.getLogger("crave.trading_loop")
 
+from Sub_Projects.Trading.prop_firm_guard import PropFirmGuard
+from Sub_Projects.Trading.economic_calendar import EconomicCalendar
+from Sub_Projects.Trading.mean_reversion_engine import get_mr_engine
+from Config.config import PROP_FIRM, ACCOUNT_SIZE, CONFIDENCE_GATES
+
 
 # ── Kill Zone Helper ──────────────────────────────────────────────────────────
 
@@ -244,6 +249,9 @@ class TradingLoop:
         except Exception:
             self._is_paper = True
 
+        self.prop_firm_guard = PropFirmGuard(firm=PROP_FIRM, account_size=ACCOUNT_SIZE)
+        self.calendar = EconomicCalendar()
+
         logger.info(
             f"[TradingLoop] Initialised. Mode: "
             f"{'📄 PAPER' if self._is_paper else '💰 LIVE'}"
@@ -278,6 +286,9 @@ class TradingLoop:
         if today != self._last_trade_date:
             self._trades_today    = 0
             self._last_trade_date = today
+
+        equity = self._get_current_equity()
+        self.prop_firm_guard.update_equity(equity)
 
         from Sub_Projects.Trading.streak_state import streak
         can_trade, reason = streak.can_trade()
@@ -432,24 +443,33 @@ class TradingLoop:
     def _regime_checked_analyse(self, symbol: str,
                                   kz_name: str = "") -> Optional[dict]:
         """
-        FIX 6: Regime filter is now inside the trading loop, not a monkey-patch.
-
-        Runs regime detection first. If market is RANGING, SMC signals have
-        ~40% win rate (below breakeven) - skip entirely.
-        If VOLATILE, allow but halve position size.
-        If TRENDING_UP or TRENDING_DOWN - full analysis proceeds.
+        New Gate Stack (v10.5):
+        1. Calendar Gate (News blackout)
+        2. Prop Firm Guard
+        3. Regime Gate & Routing
         """
+        # ── 1. Calendar Gate ──────────────────────────────────────────────
+        if self.calendar.is_news_blackout(symbol):
+            logger.info(f"[TradingLoop] {symbol}: Blocked by Economic Calendar")
+            return None
+
+        # ── 2. Prop Firm Guard ────────────────────────────────────────────
+        # Run with dummy 1.0% risk to get the scaling ratio
+        guard_result = self.prop_firm_guard.check_trade(risk_pct=1.0, symbol=symbol)
+        if not guard_result["allowed"]:
+            logger.info(f"[TradingLoop] {symbol}: Prop Firm Guard blocked: {guard_result['reason']}")
+            return None
+            
+        # If guard scaled it down (e.g., 0.5%), the multiplier is 0.5
+        prop_risk_multiplier = guard_result["scaled_risk_pct"]
+
+        # ── 3. Regime Gate ────────────────────────────────────────────────
+        regime = "UNKNOWN"
         try:
             from Sub_Projects.Trading.ml.regime_classifier import regime_model
-            df = _get_ohlcv_with_ws_fallback(symbol, "1h", 100)
-            if df is not None:
-                regime = regime_model.predict(symbol, df)
-                if not regime_model.is_favourable(regime):
-                    logger.info(
-                        f"[TradingLoop] {symbol}: Regime={regime} - "
-                        f"unfavourable. Skipping."
-                    )
-                    return None
+            df_1h = _get_ohlcv_with_ws_fallback(symbol, "1h", 100)
+            if df_1h is not None:
+                regime = regime_model.predict(symbol, df_1h)
                 self._volatile_override = regime_model.should_reduce_size(regime)
             else:
                 self._volatile_override = False
@@ -457,14 +477,63 @@ class TradingLoop:
             logger.debug(f"[TradingLoop] Regime check error (non-fatal): {e}")
             self._volatile_override = False
 
-        return self._analyse_and_execute(symbol, kz_name)
+        if self._volatile_override:
+            prop_risk_multiplier *= 0.5
+
+        # ── 4. Routing ────────────────────────────────────────────────────
+        if regime == "RANGING":
+            logger.info(f"[TradingLoop] {symbol}: Regime=RANGING. Routing to Mean Reversion.")
+            df_15m = _get_ohlcv_with_ws_fallback(symbol, "15m", 250)
+            mr_result = get_mr_engine().analyze(symbol, df_15m, regime)
+            
+            if mr_result.get("signal"):
+                conf_gate = CONFIDENCE_GATES.get(symbol, CONFIDENCE_GATES.get("default", 0.50))
+                if (mr_result.get("confidence", 0) / 100.0) < conf_gate:
+                    logger.info(f"[TradingLoop] {symbol}: MR confidence {mr_result['confidence']}% below gate {conf_gate*100}%")
+                    return None
+                    
+                final_risk = mr_result["risk_pct"] * 100.0 * prop_risk_multiplier
+                validated = {
+                    "action": mr_result["signal"],
+                    "price": mr_result["entry"],
+                    "symbol": symbol,
+                    "is_swing_trade": False,
+                    "approved": True,
+                    "reason": mr_result["reason"],
+                    "grade": "B",
+                    "risk_pct": final_risk,
+                    "is_paper": self._is_paper,
+                    "exchange": self._get_exchange_for(symbol),
+                    "node": self._get_node_name(),
+                    "order_type": "market",
+                    "strict_post_only": False,
+                    "signal_id": str(uuid.uuid4())[:8].upper()
+                }
+                
+                logger.info(
+                    f"[TradingLoop] MR SIGNAL: {symbol} {mr_result['signal'].upper()} "
+                    f"conf={mr_result['confidence']}% risk={final_risk:.2f}%"
+                )
+                
+                result = self._execute(validated, mr_result["entry"])
+                if result and result.get("status") in ("filled", "paper_filled"):
+                    self._trades_today += 1
+                    return {"executed": True, "trade_id": result.get("trade_id")}
+            return None
+
+        elif regime in ("TRENDING_UP", "TRENDING_DOWN", "VOLATILE"):
+            return self._analyse_and_execute(symbol, kz_name, prop_risk_multiplier)
+        else:
+            logger.info(f"[TradingLoop] {symbol}: Regime={regime} - unfavourable. Skipping.")
+            return None
 
     # ─────────────────────────────────────────────────────────────────────────
     # SIGNAL ANALYSIS + EXECUTION
     # ─────────────────────────────────────────────────────────────────────────
 
     def _analyse_and_execute(self, symbol: str,
-                              kz_name: str = "") -> Optional[dict]:
+                              kz_name: str = "",
+                              prop_risk_multiplier: float = 1.0) -> Optional[dict]:
         logger.info(f"[TradingLoop] Analysing {symbol} ({kz_name})...")
 
         df_15m = _get_ohlcv_with_ws_fallback(symbol, "15m", 250)
@@ -512,8 +581,12 @@ class TradingLoop:
         if grade is None:
             return None
 
-        min_conf = {"A+": 55, "A": 50, "B+": 45, "B": 40}.get(grade, 40)
+        min_conf_grade = {"A+": 55, "A": 50, "B+": 45, "B": 40}.get(grade, 40)
+        inst_conf_gate = CONFIDENCE_GATES.get(symbol, CONFIDENCE_GATES.get("default", 0.50)) * 100
+        min_conf = max(min_conf_grade, inst_conf_gate)
+        
         if confidence < min_conf:
+            logger.info(f"[TradingLoop] {symbol}: SMC confidence {confidence}% below gate {min_conf}%")
             return None
 
         mtf_ok, mtf_reason = check_mtf_confluence(symbol, direction, df_1h, df_4h)
@@ -522,35 +595,7 @@ class TradingLoop:
                              confidence, grade_str, context, df_1h=df_15m)
             return None
 
-        # ── Economic Calendar No-Trade Window ─────────────────────────────
-        # Hard-block new entries within 30min of a high-impact event.
-        # The EventHedgeManager handles EXISTING positions; this blocks NEW ones.
-        try:
-            from Sub_Projects.Trading.data_agent import DataAgent
-            from Config.config import get_instrument
-            da   = DataAgent()
-            inst = get_instrument(symbol)
-            ccys = inst.get("currencies", ["USD"])
 
-            for ccy in ccys:
-                result = da.check_red_folder(
-                    currencies=(ccy,), window_mins=30
-                )
-                if result.get("is_danger"):
-                    event_name = result.get("event_name", "Unknown")
-                    mins_away  = result.get("time_to_event_mins", 0)
-                    logger.info(
-                        f"[TradingLoop] {symbol}: NO-TRADE WINDOW — "
-                        f"{event_name} ({ccy}) in {mins_away}min"
-                    )
-                    self._log_signal(
-                        symbol, "skip",
-                        f"Econ calendar: {event_name} in {mins_away}min",
-                        confidence, grade_str, context, df_1h=df_15m
-                    )
-                    return None
-        except Exception as e:
-            logger.debug(f"[TradingLoop] Econ calendar check error (non-fatal): {e}")
 
         corr_ok, corr_reason = self._correlation_check(symbol, direction)
         if not corr_ok:
@@ -642,9 +687,14 @@ class TradingLoop:
         if getattr(self, "_jarvis_half_size", False):
             risk_pct = round(risk_pct * 0.5, 4)
             logger.info(
-                f"[TradingLoop] {symbol}: Jarvis half-size applied "
-                f"-> {risk_pct:.2f}%"
+                f"[TradingLoop] {symbol}: Jarvis override - "
+                f"size halved to {risk_pct:.2f}%"
             )
+
+        # Apply Prop Firm scaling
+        if prop_risk_multiplier != 1.0:
+            risk_pct = round(risk_pct * prop_risk_multiplier, 4)
+            logger.info(f"[TradingLoop] {symbol}: Prop Firm guard scaled risk by {prop_risk_multiplier}x to {risk_pct}%")
 
         # ── Portfolio-level risk gate ─────────────────────────────────────
         try:
