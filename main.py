@@ -91,6 +91,16 @@ def main():
     t = threading.Thread(target=start_orchestrator, daemon=True, name="CRAVEStart")
     t.start()
 
+    # Auto-start Trading Engine in a separate console window
+    import subprocess
+    bot_path = os.path.join(os.environ.get("CRAVE_ROOT", r"D:\CRAVE"), "run_bot.py")
+    if os.path.exists(bot_path):
+        print("[Main] Auto-starting CRAVE Trading Engine in new console...")
+        try:
+            subprocess.Popen([sys.executable, bot_path], creationflags=subprocess.CREATE_NEW_CONSOLE)
+        except Exception as e:
+            print(f"[Main] Failed to start trading engine: {e}")
+
     # 7. Run the Qt event loop (blocks until window closed)
     print("[Main] CRAVE is running. Close the Orb window to exit.")
     exit_code = app.exec()
