@@ -16,4 +16,8 @@ timeout /t 5 /nobreak >nul
 REM 3. Boot CRAVE using pythonw.exe (windowless Python — zero CMD)
 cd /d "D:\CRAVE"
 start "" /b "D:\CRAVE\.venv\Scripts\pythonw.exe" main.py > "D:\CRAVE\Logs\crave_boot.log" 2>&1
+
+REM 4. Boot CRAVE Trading Engine in a visible CMD window
+start "CRAVE Trading Engine" "D:\CRAVE\.venv\Scripts\python.exe" "run_bot.py"
+
 exit
