@@ -599,5 +599,5 @@ def get_bias_engine() -> "DailyBiasEngine":
     return _bias_engine_instance
 
 # Backward-compat: existing imports of `bias_engine` still work via the callable
-bias_engine = get_bias_engine
+bias_engine = get_bias_engine()
 

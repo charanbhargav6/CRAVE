@@ -14,6 +14,10 @@ Run:  python run_bot.py
 
 import os
 import sys
+import io
+if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 import socket
 import logging
 import argparse
@@ -30,6 +34,7 @@ except ImportError:
     print("Run: pip install python-dotenv")
 
 sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).parent / "Sub_Projects" / "Trading"))
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 from Config.config import LOGGING as LOG_CFG, LOGS_DIR
@@ -39,7 +44,8 @@ def setup_logging():
     level    = getattr(logging, LOG_CFG.get("level", "INFO"))
     handlers = []
 
-    ch = logging.StreamHandler()
+    import sys
+    ch = logging.StreamHandler(stream=sys.stdout)
     ch.setFormatter(logging.Formatter(
         "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
         datefmt="%H:%M:%S"
@@ -51,6 +57,7 @@ def setup_logging():
         log_file,
         maxBytes=LOG_CFG.get("max_size_mb", 10) * 1024 * 1024,
         backupCount=LOG_CFG.get("backup_count", 5),
+        encoding="utf-8"
     )
     fh.setFormatter(logging.Formatter(
         "%(asctime)s [%(levelname)s] %(name)s: %(message)s"

@@ -300,6 +300,8 @@ class CRAVEOrb(QMainWindow):
         self.setWindowTitle("FRIDAY")
 
         self._silent_mode = False
+        self._minimized = False          # tracks if window is minimized to tray
+        self._was_silent_before_minimize = False  # remember silent state before minimize
         self._bar_visible = True
         self._dragging = False
         self._drag_offset = QPoint()
@@ -351,7 +353,7 @@ class CRAVEOrb(QMainWindow):
         self._min_btn = QPushButton("—")
         self._min_btn.setFixedSize(24, 24)
         self._min_btn.setStyleSheet(btn_style)
-        self._min_btn.clicked.connect(self.hide)
+        self._min_btn.clicked.connect(self._minimize_to_tray)
         
         self._close_btn = QPushButton("✕")
         self._close_btn.setFixedSize(24, 24)
@@ -406,17 +408,41 @@ class CRAVEOrb(QMainWindow):
         icon = self.style().standardIcon(QStyle.StandardPixmap.SP_ComputerIcon)
         self._tray_icon.setIcon(icon)
         tray_menu = QMenu()
-        tray_menu.addAction("Restore", self.showNormal)
+        tray_menu.addAction("Restore", self._restore_from_tray)
         tray_menu.addAction("Quit", self.close)
         self._tray_icon.setContextMenu(tray_menu)
         self._tray_icon.activated.connect(self._on_tray_activated)
         self._tray_icon.show()
 
+    def _minimize_to_tray(self):
+        """Minimize to system tray and PAUSE the voice pipeline to stop mic capture."""
+        self._minimized = True
+        # Remember if user was already in silent mode so we don't break their state on restore
+        self._was_silent_before_minimize = self._silent_mode
+
+        # Pause voice listening — this stops the mic from picking up ambient audio
+        if self._orchestrator and not self._silent_mode:
+            self._orchestrator._voice.set_silent_mode(True)
+            print("[Orb] Minimized — voice pipeline paused")
+
+        self.hide()
+
     def _on_tray_activated(self, reason):
         from PyQt6.QtWidgets import QSystemTrayIcon
         if reason == QSystemTrayIcon.ActivationReason.Trigger:
-            self.showNormal()
-            self.activateWindow()
+            self._restore_from_tray()
+
+    def _restore_from_tray(self):
+        """Restore from system tray and RESUME the voice pipeline."""
+        self.showNormal()
+        self.activateWindow()
+        self._minimized = False
+
+        # Resume voice listening only if user wasn't in silent mode before minimize
+        if self._orchestrator and not self._was_silent_before_minimize:
+            self._orchestrator._voice.set_silent_mode(False)
+            self._on_set_state("idle")
+            print("[Orb] Restored — voice pipeline resumed")
 
     @pyqtSlot(str)
     def _on_set_state(self, state: str):

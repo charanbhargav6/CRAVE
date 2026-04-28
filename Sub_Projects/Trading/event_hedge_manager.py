@@ -525,4 +525,4 @@ def get_event_hedge() -> "EventHedgeManager":
         _event_hedge_instance = EventHedgeManager()
     return _event_hedge_instance
 
-event_hedge = get_event_hedge
+event_hedge = get_event_hedge()
