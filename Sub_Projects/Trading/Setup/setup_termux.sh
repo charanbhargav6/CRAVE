@@ -23,12 +23,12 @@ echo -e "${NC}"
 
 # ── 1. Update Termux packages ─────────────────────────────────────────────────
 echo -e "${YELLOW}[1/9] Updating Termux...${NC}"
-pkg update -y -q
-pkg upgrade -y -q
+pkg update -y
+pkg upgrade -y
 
 # ── 2. Install required packages ─────────────────────────────────────────────
 echo -e "${YELLOW}[2/9] Installing packages...${NC}"
-pkg install -y -q \
+pkg install -y \
     python \
     git \
     openssh \
@@ -46,8 +46,7 @@ pkg install -y -q \
     python-pandas \
     python-cryptography \
     python-aiohttp \
-    python-cffi \
-    2>/dev/null
+    python-cffi
 
 # ── 3. Python packages (lightweight — phone-optimised) ───────────────────────
 echo -e "${YELLOW}[3/9] Installing Python packages (phone-optimised)...${NC}"
