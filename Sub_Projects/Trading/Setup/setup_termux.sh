@@ -44,9 +44,7 @@ pkg install -y \
     cmake \
     python-numpy \
     python-pandas \
-    python-cryptography \
-    python-aiohttp \
-    python-cffi
+    python-cryptography
 
 # ── 3. Python packages (lightweight — phone-optimised) ───────────────────────
 echo -e "${YELLOW}[3/9] Installing Python packages (phone-optimised)...${NC}"
@@ -61,7 +59,8 @@ pip install --break-system-packages --no-cache-dir \
     ccxt \
     schedule \
     pytz \
-    websockets
+    websockets \
+    aiohttp
 
 echo "  Packages installed (phone-optimised set)."
 
