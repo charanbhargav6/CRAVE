@@ -14,6 +14,11 @@ import logging
 import threading
 from datetime import datetime
 
+try:
+    import pandas as pd
+except ImportError:
+    pd = None
+
 logger = logging.getLogger("crave.trading.execution")
 
 

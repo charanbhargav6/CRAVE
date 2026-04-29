@@ -14,8 +14,8 @@ class EmailAgent:
         # Using DPAPI injected env vars
         self.smtp_server = os.environ.get("SMTP_SERVER", "smtp.gmail.com")
         self.smtp_port = int(os.environ.get("SMTP_PORT", 587))
-        self.smtp_user = os.environ.get("SMTP_USER", "")
-        self.smtp_pass = os.environ.get("SMTP_PASS", "")
+        self.smtp_user = os.environ.get("SMTP_EMAIL", os.environ.get("SMTP_USER", ""))
+        self.smtp_pass = os.environ.get("SMTP_PASSWORD", os.environ.get("SMTP_PASS", ""))
         self.memory = MemoryBank()
 
     def send_email(self, to_address: str, subject: str, body: str) -> str:

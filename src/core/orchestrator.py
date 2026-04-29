@@ -16,6 +16,7 @@ Phase 6 Orb UI will call run_once() and start_loop() directly.
 
 import os
 import sys
+import logging
 import json
 import time
 import queue
@@ -26,6 +27,8 @@ from .audio_utils import load_config, reload_config, crave_root
 from .model_router import ModelRouter
 from .tts import speak, set_silent_mode as tts_set_silent, is_speaking, stop as tts_stop, speak_startup, speak_silent_on, speak_silent_off
 from .voice import VoicePipeline
+
+logger = logging.getLogger("crave.orchestrator")
 
 SEP = chr(92)
 
@@ -527,7 +530,9 @@ class Orchestrator:
             
         # ── The Agentic Brain (LLM Tool-Calling) ─────────────────────────
         tool_call = self._tool_call_llm(text)
-        intent = tool_call.get("tool", "chat")
+        raw_tool = tool_call.get("tool", "chat")
+        # Map the new LLM tool names back to internal legacy intent strings
+        intent = self._TOOL_TO_INTENT.get(raw_tool, raw_tool)
         tool_params = tool_call.get("params", {})
         
         # Phase 10: Multi-Step Task Chaining Override

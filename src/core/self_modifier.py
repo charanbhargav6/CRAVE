@@ -306,11 +306,12 @@ Test Output Preview:
         # Apply the physical files (since git merge across detached sandbox is complex)
         # We write straight to D:\CRAVE, then commit on the feature branch, then merge.
         try:
+            crave_root_dir = os.environ.get("CRAVE_ROOT", r"D:\CRAVE")
             for mod in modifications:
                 file_path = mod.get("file", "")
                 content = mod.get("content", "")
-                full_path = Path(CRAVE_ROOT) / file_path
-                os.makedirs(full_path.parent, exist_ok=True)
+                full_path = os.path.join(crave_root_dir, file_path)
+                os.makedirs(os.path.dirname(full_path), exist_ok=True)
                 with open(full_path, "w", encoding="utf-8") as f:
                     f.write(content)
             

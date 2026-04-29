@@ -244,7 +244,9 @@ class GreeksMonitor:
 
         try:
             expiry = datetime.fromisoformat(expiry_str)
-            dte    = expiry_calendar.get_dte(expiry)
+            if expiry.tzinfo is None:
+                expiry = expiry.replace(tzinfo=timezone.utc)
+            dte = max(0, (expiry - datetime.now(timezone.utc)).days)
             T      = dte / 365.0
         except Exception:
             return None

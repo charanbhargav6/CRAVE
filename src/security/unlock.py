@@ -18,8 +18,8 @@ def send_recovery_email() -> str:
     # Ensure env is loaded into memory to get SMTP credentials
     crypto_manager.decrypt_env_to_memory()
     
-    gmail_user = os.environ.get("GMAIL_USER")
-    gmail_pass = os.environ.get("GMAIL_APP_PASSWORD")
+    gmail_user = os.environ.get("SMTP_EMAIL", os.environ.get("GMAIL_USER"))
+    gmail_pass = os.environ.get("SMTP_PASSWORD", os.environ.get("GMAIL_APP_PASSWORD"))
     
     if not gmail_user or not gmail_pass:
         print("CRITICAL: SMTP credentials missing from encrypted environment.")

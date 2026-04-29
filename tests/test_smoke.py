@@ -65,7 +65,7 @@ def test_agent_imports():
     from src.agents import browser_agent
     from src.agents import email_agent
     from src.agents import file_agent
-    from src.agents import gui_agent
+    from src.agents import visual_agent
     from src.agents import kali_agent
     from src.agents import research_agent
     from src.agents import screen_agent
