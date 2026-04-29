@@ -54,7 +54,8 @@ echo -e "${YELLOW}[3/9] Installing Python packages (phone-optimised)...${NC}"
 
 # Phone version: lighter subset — no ML, no heavy backtest
 # Note: pandas and numpy are installed via pkg to prevent hours of compiling on phone
-pip install --break-system-packages -q \
+echo "  (Note: This might take 5-10 minutes on a mobile phone. Please wait and DO NOT close the app...)"
+pip install --break-system-packages --no-cache-dir \
     requests \
     python-telegram-bot \
     python-dotenv \
