@@ -161,8 +161,10 @@ class MarketDataRouter:
     def _fetch_binance(self, symbol: str, timeframe: str,
                         limit: int) -> Optional[pd.DataFrame]:
         try:
-            from Sub_Projects.Trading.data_agent import DataAgent
-            return DataAgent().get_ohlcv(symbol, timeframe=timeframe, limit=limit)
+            from Sub_Projects.Trading.data_agent import get_data_agent
+            return get_data_agent().get_ohlcv(
+                symbol, exchange="binance", timeframe=timeframe, limit=limit
+            )
         except Exception as e:
             logger.debug(f"[DataRouter] Binance failed {symbol}: {e}")
             return None
@@ -170,13 +172,11 @@ class MarketDataRouter:
     def _fetch_alpaca(self, symbol: str, timeframe: str,
                        limit: int, asset: str) -> Optional[pd.DataFrame]:
         try:
-            from Sub_Projects.Trading.data_agent import DataAgent
-            da = DataAgent()
-            # Alpaca has different timeframe formats
-            tf_map = {"1m": "1Min", "5m": "5Min", "15m": "15Min",
-                      "1h": "1Hour", "1d": "1Day", "4h": "4Hour"}
-            alpaca_tf = tf_map.get(timeframe, timeframe)
-            return da.get_ohlcv(symbol, timeframe=alpaca_tf, limit=limit)
+            from Sub_Projects.Trading.data_agent import get_data_agent
+            # Let DataAgent handle timeframe conversion internally
+            return get_data_agent().get_ohlcv(
+                symbol, exchange="alpaca", timeframe=timeframe, limit=limit
+            )
         except Exception as e:
             logger.debug(f"[DataRouter] Alpaca failed {symbol}: {e}")
             return None
@@ -262,16 +262,22 @@ class MarketDataRouter:
                          limit: int, exchange: str,
                          asset: str) -> Optional[pd.DataFrame]:
         """
-        Try alternative yfinance ticker if primary failed.
-        Maps NSE symbols to .NS suffix, Binance to CG equiv, etc.
+        Try yfinance as fallback when primary source failed.
+        For forex =X pairs, the yfinance ticker is the same symbol.
+        For Binance/NSE, maps to yfinance equivalents.
         """
         fallback_sym = self._get_fallback_symbol(symbol, asset)
-        if fallback_sym and fallback_sym != symbol:
-            logger.debug(
-                f"[DataRouter] Trying fallback: {symbol} → {fallback_sym}"
-            )
-            return self._fetch_yfinance(fallback_sym, timeframe, limit)
-        return None
+        if not fallback_sym:
+            return None
+
+        # Skip if primary was already yfinance with same symbol
+        if fallback_sym == symbol and exchange == "yfinance":
+            return None
+
+        logger.debug(
+            f"[DataRouter] Trying fallback: {symbol} → {fallback_sym} (yfinance)"
+        )
+        return self._fetch_yfinance(fallback_sym, timeframe, limit)
 
     def _get_fallback_symbol(self, symbol: str, asset: str) -> Optional[str]:
         """Map primary symbol to yfinance fallback."""
@@ -282,7 +288,15 @@ class MarketDataRouter:
             "HDFCBANK":  "HDFCBANK.NS", "INFY": "INFY.NS",
             "NIFTY_FUT": "^NSEI",  "BANKNIFTY_FUT": "^NSEBANK",
         }
-        return fallbacks.get(symbol.upper())
+        fb = fallbacks.get(symbol.upper())
+        if fb:
+            return fb
+
+        # Forex =X symbols (EURUSD=X, AUDUSD=X, etc.) are valid yfinance tickers
+        if symbol.endswith("=X"):
+            return symbol
+
+        return None
 
     def _try_websocket(self, symbol: str, timeframe: str,
                         limit: int) -> Optional[pd.DataFrame]:

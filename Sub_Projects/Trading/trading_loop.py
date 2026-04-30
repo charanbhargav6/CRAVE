@@ -189,39 +189,27 @@ def check_mtf_confluence(symbol: str, direction: str,
 def _get_ohlcv_with_ws_fallback(symbol: str,
                                   timeframe: str,
                                   limit: int):
-    """FIX S8: Use market_data_router as primary - it handles all sources."""
+    """
+    FIX S8: Use market_data_router as single entry point.
+    The router already handles: WS cache → DB cache → primary → fallback.
+    No need for a redundant fallback chain here.
+    """
     try:
         from Sub_Projects.Trading.data.market_data_router import get_data_router
         df = get_data_router().get_ohlcv(symbol, timeframe, limit=limit)
         if df is not None and len(df) >= 20:
             return df
     except Exception as e:
-        import logging
-        logging.getLogger("crave").debug(f"DataRouter failed {symbol}: {e}")
-    # Original fallback chain below remains as safety net
+        logger.debug(f"DataRouter unavailable: {e}")
 
-    # Try WebSocket cache first
+    # Last resort: direct DataAgent call (only if router module itself fails)
     try:
-        from Sub_Projects.Trading.websocket_manager import get_ws
-        ws_df = get_ws().get_live_ohlcv(symbol, timeframe, limit=limit)
-        if ws_df is not None and len(ws_df) >= 20:
-            return ws_df
-    except Exception:
-        pass
-
-    # Fall back to database cache
-    try:
-        from Sub_Projects.Trading.database_manager import db
-        cached = db.get_cached_ohlcv(symbol, timeframe, limit=limit)
-        if cached is not None and len(cached) >= 20:
-            return cached
-    except Exception:
-        pass
-
-    # Last resort: REST API
-    try:
-        from Sub_Projects.Trading.data_agent import DataAgent
-        return DataAgent().get_ohlcv(symbol, timeframe=timeframe, limit=limit)
+        from Sub_Projects.Trading.data_agent import get_data_agent
+        from Config.config import get_instrument
+        exchange = get_instrument(symbol).get("exchange", "yfinance")
+        return get_data_agent().get_ohlcv(
+            symbol, exchange=exchange, timeframe=timeframe, limit=limit
+        )
     except Exception as e:
         logger.debug(f"[Loop] OHLCV fallback failed {symbol}: {e}")
         return None
@@ -249,7 +237,25 @@ class TradingLoop:
         except Exception:
             self._is_paper = True
 
-        self.prop_firm_guard = PropFirmGuard(firm=PROP_FIRM, account_size=ACCOUNT_SIZE)
+        # ── FIX: Ensure PropFirmGuard account_size matches paper equity ────
+        # ACCOUNT_SIZE may be set for live (e.g. $100k) while paper starts
+        # at $10k. If mismatched, guard thinks there's a massive drawdown.
+        guard_account_size = ACCOUNT_SIZE
+        if self._is_paper:
+            try:
+                from Config.config import PAPER_TRADING as _pt
+                paper_equity = float(_pt.get("starting_equity", 10000))
+                if guard_account_size != paper_equity:
+                    logger.warning(
+                        f"[TradingLoop] ACCOUNT_SIZE (${guard_account_size:,.0f}) != "
+                        f"paper starting_equity (${paper_equity:,.0f}). "
+                        f"Using paper equity for PropFirmGuard."
+                    )
+                    guard_account_size = paper_equity
+            except Exception:
+                pass
+
+        self.prop_firm_guard = PropFirmGuard(firm=PROP_FIRM, account_size=guard_account_size)
         self.calendar = EconomicCalendar()
 
         logger.info(
@@ -414,8 +420,8 @@ class TradingLoop:
 
             # Use NIFTY and BANKNIFTY as primary options candidates
             for symbol in ["NIFTY_FUT", "BANKNIFTY_FUT"]:
-                from Sub_Projects.Trading.data_agent import DataAgent
-                df = DataAgent().get_ohlcv(symbol, timeframe="1h", limit=100)
+                from Sub_Projects.Trading.data_agent import get_data_agent
+                df = get_data_agent().get_ohlcv(symbol, exchange="zerodha", timeframe="1h", limit=100)
                 if df is None or len(df) < 20:
                     continue
 
@@ -909,9 +915,9 @@ class TradingLoop:
     def _live_execute(self, validated: dict, current_price: float) -> dict:
         try:
             from Sub_Projects.Trading.execution_agent import ExecutionAgent
-            from Sub_Projects.Trading.data_agent import DataAgent
+            from Sub_Projects.Trading.data_agent import get_data_agent
             exchange = validated.get("exchange", "alpaca")
-            ea = ExecutionAgent(data_agent=DataAgent())
+            ea = ExecutionAgent(data_agent=get_data_agent())
             return ea.execute_trade(validated, current_price, exchange=exchange)
         except Exception as e:
             logger.error(f"[TradingLoop] Live execution error: {e}")
@@ -937,8 +943,8 @@ class TradingLoop:
 
         # Live mode: read from broker
         try:
-            from Sub_Projects.Trading.data_agent import DataAgent
-            da      = DataAgent()
+            from Sub_Projects.Trading.data_agent import get_data_agent
+            da      = get_data_agent()
             account = da.alpaca.get_account() if da.alpaca else None
             if account:
                 return float(account.equity)

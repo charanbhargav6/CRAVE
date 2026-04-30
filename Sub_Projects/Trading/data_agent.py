@@ -611,3 +611,14 @@ class DataAgent:
             "recommended":     bool(overlap or (sessions and "Asian" not in sessions)),
             "utc_hour":        now_utc.hour,
         }
+
+
+# ── Singleton ─────────────────────────────────────────────────────────────────
+_data_agent_instance: Optional[DataAgent] = None
+
+def get_data_agent() -> DataAgent:
+    """Return shared DataAgent instance — avoids re-creating API connections."""
+    global _data_agent_instance
+    if _data_agent_instance is None:
+        _data_agent_instance = DataAgent()
+    return _data_agent_instance

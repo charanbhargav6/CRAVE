@@ -58,14 +58,15 @@ DB_PATH        = DATABASE_DIR / "crave.db"
 #
 # NEW (Session 10):
 #   PROP_FIRM             — Name of the prop firm (e.g. ftmo, the5ers). Default: ftmo
-#   ACCOUNT_SIZE          — Account size. Default: 100000
+#   ACCOUNT_SIZE          — Account size. Must match PAPER_TRADING starting_equity
+#                           in paper mode. Default: 10000
 # ─────────────────────────────────────────────────────────────────────────────
 
 PROP_FIRM = os.environ.get("PROP_FIRM", "ftmo").lower()
 try:
-    ACCOUNT_SIZE = float(os.environ.get("ACCOUNT_SIZE", "100000"))
+    ACCOUNT_SIZE = float(os.environ.get("ACCOUNT_SIZE", "10000"))
 except ValueError:
-    ACCOUNT_SIZE = 100000.0
+    ACCOUNT_SIZE = 10000.0
 
 # ─────────────────────────────────────────────────────────────────────────────
 # NODE DETECTION

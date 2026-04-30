@@ -1,0 +1,435 @@
+{
+  "events": [
+    {
+      "name": "FOMC Rate Decision",
+      "datetime": "2025-01-29T18:00:00+00:00",
+      "country": "US",
+      "impact": "high",
+      "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "XAUUSD",
+        "SPY",
+        "BTCUSDT",
+        "NIFTY50"
+      ],
+      "source": "hardcoded"
+    },
+    {
+      "name": "FOMC Rate Decision",
+      "datetime": "2025-03-19T18:00:00+00:00",
+      "country": "US",
+      "impact": "high",
+      "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "XAUUSD",
+        "SPY",
+        "BTCUSDT",
+        "NIFTY50"
+      ],
+      "source": "hardcoded"
+    },
+    {
+      "name": "FOMC Rate Decision",
+      "datetime": "2025-05-07T18:00:00+00:00",
+      "country": "US",
+      "impact": "high",
+      "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "XAUUSD",
+        "SPY",
+        "BTCUSDT",
+        "NIFTY50"
+      ],
+      "source": "hardcoded"
+    },
+    {
+      "name": "FOMC Rate Decision",
+      "datetime": "2025-06-18T18:00:00+00:00",
+      "country": "US",
+      "impact": "high",
+      "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "XAUUSD",
+        "SPY",
+        "BTCUSDT",
+        "NIFTY50"
+      ],
+      "source": "hardcoded"
+    },
+    {
+      "name": "FOMC Rate Decision",
+      "datetime": "2025-07-30T18:00:00+00:00",
+      "country": "US",
+      "impact": "high",
+      "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "XAUUSD",
+        "SPY",
+        "BTCUSDT",
+        "NIFTY50"
+      ],
+      "source": "hardcoded"
+    },
+    {
+      "name": "FOMC Rate Decision",
+      "datetime": "2025-09-17T18:00:00+00:00",
+      "country": "US",
+      "impact": "high",
+      "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "XAUUSD",
+        "SPY",
+        "BTCUSDT",
+        "NIFTY50"
+      ],
+      "source": "hardcoded"
+    },
+    {
+      "name": "FOMC Rate Decision",
+      "datetime": "2025-10-29T18:00:00+00:00",
+      "country": "US",
+      "impact": "high",
+      "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "XAUUSD",
+        "SPY",
+        "BTCUSDT",
+        "NIFTY50"
+      ],
+      "source": "hardcoded"
+    },
+    {
+      "name": "FOMC Rate Decision",
+      "datetime": "2025-12-10T18:00:00+00:00",
+      "country": "US",
+      "impact": "high",
+      "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "XAUUSD",
+        "SPY",
+        "BTCUSDT",
+        "NIFTY50"
+      ],
+      "source": "hardcoded"
+    },
+    {
+      "name": "FOMC Rate Decision",
+      "datetime": "2026-01-28T18:00:00+00:00",
+      "country": "US",
+      "impact": "high",
+      "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "XAUUSD",
+        "SPY",
+        "BTCUSDT",
+        "NIFTY50"
+      ],
+      "source": "hardcoded"
+    },
+    {
+      "name": "FOMC Rate Decision",
+      "datetime": "2026-03-18T18:00:00+00:00",
+      "country": "US",
+      "impact": "high",
+      "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "XAUUSD",
+        "SPY",
+        "BTCUSDT",
+        "NIFTY50"
+      ],
+      "source": "hardcoded"
+    },
+    {
+      "name": "FOMC Rate Decision",
+      "datetime": "2026-05-06T18:00:00+00:00",
+      "country": "US",
+      "impact": "high",
+      "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "XAUUSD",
+        "SPY",
+        "BTCUSDT",
+        "NIFTY50"
+      ],
+      "source": "hardcoded"
+    },
+    {
+      "name": "FOMC Rate Decision",
+      "datetime": "2026-06-17T18:00:00+00:00",
+      "country": "US",
+      "impact": "high",
+      "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "XAUUSD",
+        "SPY",
+        "BTCUSDT",
+        "NIFTY50"
+      ],
+      "source": "hardcoded"
+    },
+    {
+      "name": "FOMC Rate Decision",
+      "datetime": "2026-07-29T18:00:00+00:00",
+      "country": "US",
+      "impact": "high",
+      "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "XAUUSD",
+        "SPY",
+        "BTCUSDT",
+        "NIFTY50"
+      ],
+      "source": "hardcoded"
+    },
+    {
+      "name": "FOMC Rate Decision",
+      "datetime": "2026-09-16T18:00:00+00:00",
+      "country": "US",
+      "impact": "high",
+      "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "XAUUSD",
+        "SPY",
+        "BTCUSDT",
+        "NIFTY50"
+      ],
+      "source": "hardcoded"
+    },
+    {
+      "name": "FOMC Rate Decision",
+      "datetime": "2026-10-28T18:00:00+00:00",
+      "country": "US",
+      "impact": "high",
+      "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "XAUUSD",
+        "SPY",
+        "BTCUSDT",
+        "NIFTY50"
+      ],
+      "source": "hardcoded"
+    },
+    {
+      "name": "FOMC Rate Decision",
+      "datetime": "2026-12-09T18:00:00+00:00",
+      "country": "US",
+      "impact": "high",
+      "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "XAUUSD",
+        "SPY",
+        "BTCUSDT",
+        "NIFTY50"
+      ],
+      "source": "hardcoded"
+    },
+    {
+      "name": "RBI MPC Rate Decision",
+      "datetime": "2025-02-07T05:00:00+00:00",
+      "country": "IN",
+      "impact": "high",
+      "affects": [
+        "NIFTY50",
+        "BANKNIFTY",
+        "USDINR"
+      ],
+      "source": "hardcoded"
+    },
+    {
+      "name": "RBI MPC Rate Decision",
+      "datetime": "2025-04-09T05:00:00+00:00",
+      "country": "IN",
+      "impact": "high",
+      "affects": [
+        "NIFTY50",
+        "BANKNIFTY",
+        "USDINR"
+      ],
+      "source": "hardcoded"
+    },
+    {
+      "name": "RBI MPC Rate Decision",
+      "datetime": "2025-06-06T05:00:00+00:00",
+      "country": "IN",
+      "impact": "high",
+      "affects": [
+        "NIFTY50",
+        "BANKNIFTY",
+        "USDINR"
+      ],
+      "source": "hardcoded"
+    },
+    {
+      "name": "RBI MPC Rate Decision",
+      "datetime": "2025-08-06T05:00:00+00:00",
+      "country": "IN",
+      "impact": "high",
+      "affects": [
+        "NIFTY50",
+        "BANKNIFTY",
+        "USDINR"
+      ],
+      "source": "hardcoded"
+    },
+    {
+      "name": "RBI MPC Rate Decision",
+      "datetime": "2025-10-08T05:00:00+00:00",
+      "country": "IN",
+      "impact": "high",
+      "affects": [
+        "NIFTY50",
+        "BANKNIFTY",
+        "USDINR"
+      ],
+      "source": "hardcoded"
+    },
+    {
+      "name": "RBI MPC Rate Decision",
+      "datetime": "2025-12-05T05:00:00+00:00",
+      "country": "IN",
+      "impact": "high",
+      "affects": [
+        "NIFTY50",
+        "BANKNIFTY",
+        "USDINR"
+      ],
+      "source": "hardcoded"
+    },
+    {
+      "name": "RBI MPC Rate Decision",
+      "datetime": "2026-02-06T05:00:00+00:00",
+      "country": "IN",
+      "impact": "high",
+      "affects": [
+        "NIFTY50",
+        "BANKNIFTY",
+        "USDINR"
+      ],
+      "source": "hardcoded"
+    },
+    {
+      "name": "RBI MPC Rate Decision",
+      "datetime": "2026-04-07T05:00:00+00:00",
+      "country": "IN",
+      "impact": "high",
+      "affects": [
+        "NIFTY50",
+        "BANKNIFTY",
+        "USDINR"
+      ],
+      "source": "hardcoded"
+    },
+    {
+      "name": "RBI MPC Rate Decision",
+      "datetime": "2026-06-05T05:00:00+00:00",
+      "country": "IN",
+      "impact": "high",
+      "affects": [
+        "NIFTY50",
+        "BANKNIFTY",
+        "USDINR"
+      ],
+      "source": "hardcoded"
+    },
+    {
+      "name": "RBI MPC Rate Decision",
+      "datetime": "2026-08-05T05:00:00+00:00",
+      "country": "IN",
+      "impact": "high",
+      "affects": [
+        "NIFTY50",
+        "BANKNIFTY",
+        "USDINR"
+      ],
+      "source": "hardcoded"
+    },
+    {
+      "name": "NFP (Non-Farm Payrolls)",
+      "datetime": "2026-03-06T12:30:00+00:00",
+      "country": "US",
+      "impact": "high",
+      "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "XAUUSD",
+        "SPY",
+        "US30"
+      ],
+      "source": "hardcoded"
+    },
+    {
+      "name": "NFP (Non-Farm Payrolls)",
+      "datetime": "2026-04-03T12:30:00+00:00",
+      "country": "US",
+      "impact": "high",
+      "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "XAUUSD",
+        "SPY",
+        "US30"
+      ],
+      "source": "hardcoded"
+    },
+    {
+      "name": "NFP (Non-Farm Payrolls)",
+      "datetime": "2026-05-01T12:30:00+00:00",
+      "country": "US",
+      "impact": "high",
+      "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "XAUUSD",
+        "SPY",
+        "US30"
+      ],
+      "source": "hardcoded"
+    },
+    {
+      "name": "NFP (Non-Farm Payrolls)",
+      "datetime": "2026-06-05T12:30:00+00:00",
+      "country": "US",
+      "impact": "high",
+      "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "XAUUSD",
+        "SPY",
+        "US30"
+      ],
+      "source": "hardcoded"
+    },
+    {
+      "name": "NFP (Non-Farm Payrolls)",
+      "datetime": "2026-07-03T12:30:00+00:00",
+      "country": "US",
+      "impact": "high",
+      "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "XAUUSD",
+        "SPY",
+        "US30"
+      ],
+      "source": "hardcoded"
+    }
+  ],
+  "ts": 1777534050.7386205
+}
