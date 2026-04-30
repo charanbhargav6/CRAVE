@@ -397,9 +397,21 @@ class DailyBiasEngine:
         if w_dir == "neutral" and d_dir == "bearish":
             return "SELL", 2, "Daily bearish, weekly neutral - lean short"
 
-        # Both neutral or unknown
+        # Both neutral or unknown — FIX B2: use EMA21 direction as tiebreaker
+        # instead of hard NO_TRADE. Gives strength=1 (lowest confidence).
+        # This allows mean reversion trades in ranging sessions.
         if w_dir in ("neutral", "unknown") and d_dir in ("neutral", "unknown"):
-            return "NO_TRADE", 0, "No clear directional bias - wait"
+            # Fall back to simple EMA21 slope to pick a lean direction
+            try:
+                from Sub_Projects.Trading.instrument_scanner import _get_ema_lean
+                lean = _get_ema_lean(symbol)
+                if lean == "bullish":
+                    return "BUY",  1, "Neutral session - EMA21 lean long (MR mode)"
+                elif lean == "bearish":
+                    return "SELL", 1, "Neutral session - EMA21 lean short (MR mode)"
+            except Exception:
+                pass
+            return "BUY", 1, "No clear bias - allowing low-confidence MR setups"
 
         # Conflict: weekly says one thing, daily says opposite
         if (w_dir == "bullish" and d_dir == "bearish") or \

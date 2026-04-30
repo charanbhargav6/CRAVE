@@ -287,6 +287,21 @@ class TradingLoop:
             self._trades_today    = 0
             self._last_trade_date = today
 
+            # ── FIX B1: Run bias engine on startup / new day ───────────────
+            # Bias engine normally runs at 06:30 UTC via scheduler.
+            # If bot starts after 06:30 (e.g. 10:36) bias was never computed
+            # → bias_score = 0 for ALL instruments → zero trades all day.
+            # Fix: always run bias analysis on first cycle of each day.
+            try:
+                from Sub_Projects.Trading.daily_bias_engine import bias_engine
+                from Sub_Projects.Trading.instrument_scanner import scanner
+                logger.info("[TradingLoop] New day — running startup bias analysis...")
+                bias_engine.run_daily_analysis(force=True)
+                scanner.run_daily_scan(force=True)
+                logger.info("[TradingLoop] Startup bias analysis complete.")
+            except Exception as e:
+                logger.warning(f"[TradingLoop] Startup bias run failed (non-fatal): {e}")
+
         equity = self._get_current_equity()
         self.prop_firm_guard.update_equity(equity)
 
@@ -349,7 +364,25 @@ class TradingLoop:
 
             in_kz, kz_name = is_in_kill_zone(symbol)
             if not in_kz:
-                self._add_to_watchlist(symbol, inst_data)
+                # FIX B3: Outside kill zone — SMC still waits for KZ.
+                # But Mean Reversion setups are valid any time price is at
+                # a BB extreme — no session timing required.
+                # Route to MR analysis directly, skip SMC gate.
+                try:
+                    from Sub_Projects.Trading.ml.regime_classifier import regime_model
+                    df_check = _get_ohlcv_with_ws_fallback(symbol, "1h", 50)
+                    regime   = regime_model.predict(symbol, df_check) if df_check is not None else "UNKNOWN"
+                except Exception:
+                    regime = "UNKNOWN"
+
+                if regime == "RANGING":
+                    result = self._analyse_mean_reversion(symbol, "", regime)
+                    if result and result.get("executed"):
+                        slots_available -= 1
+                        if slots_available <= 0:
+                            break
+                else:
+                    self._add_to_watchlist(symbol, inst_data)
                 continue
 
             # FIX 6: Regime check is now a first-class method call,

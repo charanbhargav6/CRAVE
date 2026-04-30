@@ -43,7 +43,8 @@ logger = logging.getLogger("crave.scanner")
 
 class InstrumentScanner:
 
-    MIN_SCORE_TO_TRADE = 6
+    MIN_SCORE_TO_TRADE    = 6   # Standard SMC threshold
+    MIN_SCORE_MR_TRADE    = 4   # Mean Reversion threshold (lower — compensated by higher win rate)
 
     def __init__(self):
         self._today_ranking: list = []
@@ -189,13 +190,15 @@ class InstrumentScanner:
         score += funding_penalty
 
         # ── Final decision ────────────────────────────────────────────────
-        tradeable = (
-            score >= self.MIN_SCORE_TO_TRADE and
-            bias_score > 0   # Must have a clear bias
-        )
+        # FIX B2: Two tiers:
+        #   SMC trades:  score >= 6 AND bias present (directional trend needed)
+        #   MR  trades:  score >= 4 (ranging sessions — no direction required)
+        smc_tradeable = score >= self.MIN_SCORE_TO_TRADE and bias_score > 0
+        mr_tradeable  = score >= self.MIN_SCORE_MR_TRADE and not smc_tradeable
+        tradeable     = smc_tradeable or mr_tradeable
 
         if not tradeable:
-            if bias_score == 0:
+            if bias_score == 0 and score < self.MIN_SCORE_MR_TRADE:
                 reason = "No clear daily bias"
             elif score < self.MIN_SCORE_TO_TRADE:
                 reason = f"Score {score} < minimum {self.MIN_SCORE_TO_TRADE}"
@@ -416,4 +419,27 @@ class InstrumentScanner:
 
 # ── Singleton ─────────────────────────────────────────────────────────────────
 scanner = InstrumentScanner()
+
+
+def _get_ema_lean(symbol: str) -> str:
+    """
+    Helper used by daily_bias_engine._combine_biases() as tiebreaker
+    when both weekly and daily bias are neutral/unknown.
+    Returns 'bullish', 'bearish', or 'neutral'.
+    """
+    try:
+        df = scanner._get_ohlcv(symbol, "1h", 50)
+        if df is None or len(df) < 22:
+            return "neutral"
+        ema21 = df["close"].ewm(span=21, adjust=False).mean()
+        slope = ema21.iloc[-1] - ema21.iloc[-5]   # 5-bar slope
+        close = float(df["close"].iloc[-1])
+        ema_val = float(ema21.iloc[-1])
+        if close > ema_val and slope > 0:
+            return "bullish"
+        if close < ema_val and slope < 0:
+            return "bearish"
+        return "neutral"
+    except Exception:
+        return "neutral"
 
