@@ -56,6 +56,7 @@ pip install --break-system-packages --no-cache-dir \
     requests \
     python-telegram-bot \
     python-dotenv \
+    coincurve==20.0.0 \
     ccxt \
     schedule \
     pytz \
