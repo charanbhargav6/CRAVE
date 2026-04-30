@@ -515,50 +515,55 @@ class TradingLoop:
 
         # ── 4. Routing ────────────────────────────────────────────────────
         if regime == "RANGING":
-            logger.info(f"[TradingLoop] {symbol}: Regime=RANGING. Routing to Mean Reversion.")
-            df_15m = _get_ohlcv_with_ws_fallback(symbol, "15m", 250)
-            mr_result = get_mr_engine().analyze(symbol, df_15m, regime)
-            
-            if mr_result.get("signal"):
-                conf_gate = CONFIDENCE_GATES.get(symbol, CONFIDENCE_GATES.get("default", 0.50))
-                if (mr_result.get("confidence", 0) / 100.0) < conf_gate:
-                    logger.info(f"[TradingLoop] {symbol}: MR confidence {mr_result['confidence']}% below gate {conf_gate*100}%")
-                    return None
-                    
-                final_risk = mr_result["risk_pct"] * 100.0 * prop_risk_multiplier
-                validated = {
-                    "action": mr_result["signal"],
-                    "price": mr_result["entry"],
-                    "symbol": symbol,
-                    "is_swing_trade": False,
-                    "approved": True,
-                    "reason": mr_result["reason"],
-                    "grade": "B",
-                    "risk_pct": final_risk,
-                    "is_paper": self._is_paper,
-                    "exchange": self._get_exchange_for(symbol),
-                    "node": self._get_node_name(),
-                    "order_type": "market",
-                    "strict_post_only": False,
-                    "signal_id": str(uuid.uuid4())[:8].upper()
-                }
-                
-                logger.info(
-                    f"[TradingLoop] MR SIGNAL: {symbol} {mr_result['signal'].upper()} "
-                    f"conf={mr_result['confidence']}% risk={final_risk:.2f}%"
-                )
-                
-                result = self._execute(validated, mr_result["entry"])
-                if result and result.get("status") in ("filled", "paper_filled"):
-                    self._trades_today += 1
-                    return {"executed": True, "trade_id": result.get("trade_id")}
-            return None
+            return self._analyse_mean_reversion(symbol, kz_name, regime, prop_risk_multiplier)
 
         elif regime in ("TRENDING_UP", "TRENDING_DOWN", "VOLATILE"):
             return self._analyse_and_execute(symbol, kz_name, prop_risk_multiplier)
         else:
             logger.info(f"[TradingLoop] {symbol}: Regime={regime} - unfavourable. Skipping.")
             return None
+
+    def _analyse_mean_reversion(self, symbol: str, kz_name: str, regime: str, prop_risk_multiplier: float = 1.0) -> Optional[dict]:
+        logger.info(f"[TradingLoop] {symbol}: Regime=RANGING. Routing to Mean Reversion. ({kz_name})")
+        df_15m = _get_ohlcv_with_ws_fallback(symbol, "15m", 250)
+        mr_result = get_mr_engine().analyze(symbol, df_15m, regime)
+        
+        if mr_result.get("signal"):
+            conf_gate = CONFIDENCE_GATES.get(symbol, CONFIDENCE_GATES.get("default", 0.50))
+            if (mr_result.get("confidence", 0) / 100.0) < conf_gate:
+                logger.info(f"[TradingLoop] {symbol}: MR confidence {mr_result['confidence']}% below gate {conf_gate*100}%")
+                return None
+                
+            final_risk = mr_result["risk_pct"] * 100.0 * prop_risk_multiplier
+            validated = {
+                "action": mr_result["signal"],
+                "price": mr_result["entry"],
+                "symbol": symbol,
+                "is_swing_trade": False,
+                "approved": True,
+                "reason": mr_result["reason"],
+                "grade": "B",
+                "risk_pct": final_risk,
+                "is_paper": self._is_paper,
+                "exchange": self._get_exchange_for(symbol),
+                "node": self._get_node_name(),
+                "order_type": "market",
+                "strict_post_only": False,
+                "signal_id": str(uuid.uuid4())[:8].upper()
+            }
+            
+            logger.info(
+                f"[TradingLoop] MR SIGNAL: {symbol} {mr_result['signal'].upper()} "
+                f"conf={mr_result['confidence']}% risk={final_risk:.2f}%"
+            )
+            
+            result = self._execute(validated, mr_result["entry"])
+            if result and result.get("status") in ("filled", "paper_filled"):
+                self._trades_today += 1
+                return {"executed": True, "trade_id": result.get("trade_id")}
+        return None
+
+
 
     # ─────────────────────────────────────────────────────────────────────────
     # SIGNAL ANALYSIS + EXECUTION
