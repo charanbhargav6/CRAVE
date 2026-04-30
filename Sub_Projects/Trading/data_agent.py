@@ -69,7 +69,7 @@ def retry_on_ratelimit(max_retries: int = 3, backoff: float = 2.0):
 _TF_MINUTES = {
     "1m": 1, "3m": 3, "5m": 5, "15m": 15, "30m": 30,
     "1h": 60, "2h": 120, "4h": 240, "6h": 360, "12h": 720,
-    "1d": 1440, "1w": 10080,
+    "1d": 1440, "1w": 10080, "1wk": 10080,
 }
 
 
@@ -175,7 +175,10 @@ class DataAgent:
             if exchange == "binance":
                 if not self.binance:
                     return None
-                bars = self.binance.fetch_ohlcv(symbol, timeframe, limit=limit)
+                # Normalise timeframe: Binance uses "1w" not "1wk"
+                bn_tf_map = {"1wk": "1w"}
+                bn_tf = bn_tf_map.get(timeframe, timeframe)
+                bars = self.binance.fetch_ohlcv(symbol, bn_tf, limit=limit)
                 df   = pd.DataFrame(
                     bars, columns=['time', 'open', 'high', 'low', 'close', 'volume']
                 )
@@ -190,6 +193,7 @@ class DataAgent:
                 tf_map = {
                     "1m": "1Min", "5m": "5Min", "15m": "15Min",
                     "1h": "1Hour", "4h": "4Hour", "1d": "1Day",
+                    "1w": "1Week", "1wk": "1Week",
                 }
                 tf = tf_map.get(timeframe, "1Hour")
 

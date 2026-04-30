@@ -552,8 +552,8 @@ class DailyBiasEngine:
             inst      = get_instrument(symbol)
             currencies = inst.get("currencies", ["USD"])
 
-            from Sub_Projects.Trading.data_agent import DataAgent
-            da    = DataAgent()
+            from Sub_Projects.Trading.data_agent import get_data_agent
+            da    = get_data_agent()
             result = da.check_red_folder(currencies=currencies, window_mins=240)
             if result.get("is_danger"):
                 return result.get("event_name", "unknown event")

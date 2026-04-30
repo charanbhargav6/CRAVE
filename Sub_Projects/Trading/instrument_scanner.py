@@ -175,8 +175,8 @@ class InstrumentScanner:
         funding_penalty = 0
         if inst_cfg.get("funding_check"):
             try:
-                from Sub_Projects.Trading.data_agent import DataAgent
-                da   = DataAgent()
+                from Sub_Projects.Trading.data_agent import get_data_agent
+                da   = get_data_agent()
                 rate = da.get_funding_rate(symbol)
                 if rate.get("available"):
                     r = abs(rate.get("funding_rate_pct", 0))

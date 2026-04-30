@@ -430,8 +430,8 @@ def run_full_bot(node: str, mode: str):
         try:
             from Sub_Projects.Trading.position_tracker import positions
             from Sub_Projects.Trading.brokers.alpaca_stocks_agent import get_alpaca_stocks
-            from Sub_Projects.Trading.data_agent import DataAgent
-            da = DataAgent()
+            from Sub_Projects.Trading.data_agent import get_data_agent
+            da = get_data_agent()
             for pos in positions.get_all():
                 if pos.get("exchange") != "alpaca":
                     continue

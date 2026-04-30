@@ -302,8 +302,8 @@ class TradingLoop:
                 from Sub_Projects.Trading.daily_bias_engine import bias_engine
                 from Sub_Projects.Trading.instrument_scanner import scanner
                 logger.info("[TradingLoop] New day — running startup bias analysis...")
-                bias_engine.run_daily_analysis(force=True)
-                scanner.run_daily_scan(force=True)
+                bias_engine.run_daily_analysis()
+                scanner.run_daily_scan()
                 logger.info("[TradingLoop] Startup bias analysis complete.")
             except Exception as e:
                 logger.warning(f"[TradingLoop] Startup bias run failed (non-fatal): {e}")
