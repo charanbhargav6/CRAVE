@@ -482,8 +482,9 @@ class TradingLoop:
         3. Regime Gate & Routing
         """
         # ── 1. Calendar Gate ──────────────────────────────────────────────
-        if self.calendar.is_news_blackout(symbol):
-            logger.info(f"[TradingLoop] {symbol}: Blocked by Economic Calendar")
+        blackout_status = self.calendar.is_blackout_now(symbol)
+        if blackout_status.get("blackout"):
+            logger.info(f"[TradingLoop] {symbol}: Blocked by Economic Calendar - {blackout_status.get('reason')}")
             return None
 
         # ── 2. Prop Firm Guard ────────────────────────────────────────────
