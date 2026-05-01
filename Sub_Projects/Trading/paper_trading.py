@@ -164,16 +164,11 @@ class PaperTradingEngine:
     # TRADE RESULT — FIX M5: stores (r, risk) pair
     # ─────────────────────────────────────────────────────────────────────────
 
-    def record_trade_result(self, r_multiple: float, risk_pct: float = 1.0):
+    def record_trade_result(self, r_multiple: float, risk_pct: float = 1.0,
+                             symbol: str = "", grade: str = ""):
         """
         Update paper equity after a trade closes.
-
-        FIX M5: Now stores (r_multiple, risk_pct) pairs so Sharpe is
-        calculated using actual equity returns, not a fixed 1% assumption.
-
-        equity_change = r_multiple × risk_pct / 100
-        e.g.: +2R at 1.5% risk = +3% equity change
-              -1R at 0.25% risk = -0.25% equity change (B grade survival mode)
+        v10.5: Also updates compounding engine for milestone tracking + tier upgrades.
         """
         equity_change_pct = r_multiple * risk_pct
         old_equity        = self._state["equity"]
@@ -199,13 +194,13 @@ class PaperTradingEngine:
             "r":    round(r_multiple, 3),
             "risk": round(risk_pct, 4),
         })
-        self._state["r_multiples"].append(round(r_multiple, 3))  # backward compat
+        self._state["r_multiples"].append(round(r_multiple, 3))
         self._state["equity_curve"].append(round(new_equity, 2))
 
         # Keep last 500
         if len(self._state["r_entries"]) > 500:
-            self._state["r_entries"]   = self._state["r_entries"][-500:]
-            self._state["r_multiples"] = self._state["r_multiples"][-500:]
+            self._state["r_entries"]    = self._state["r_entries"][-500:]
+            self._state["r_multiples"]  = self._state["r_multiples"][-500:]
             self._state["equity_curve"] = self._state["equity_curve"][-500:]
 
         start = self._state["starting_equity"]
@@ -215,11 +210,36 @@ class PaperTradingEngine:
         self._state["last_updated"] = datetime.now(timezone.utc).isoformat()
         self._save_state()
 
+        # ── v10.5: Feed compound engine for milestone + tier tracking ─────
+        try:
+            from Sub_Projects.Trading.compounding_engine import get_compound_engine
+            comp_result = get_compound_engine().record_trade(
+                r_multiple, risk_pct, symbol=symbol, grade=grade
+            )
+            if comp_result.get("milestone_hit"):
+                logger.info(
+                    f"[Paper] 🎯 MILESTONE HIT: ${comp_result['milestone_hit']:,.0f}!"
+                )
+            if comp_result.get("new_risk_tier") != self._get_current_tier(old_equity):
+                logger.info(
+                    f"[Paper] 📈 TIER UPGRADE → {comp_result['new_risk_tier']} "
+                    f"(equity ${new_equity:,.2f})"
+                )
+        except Exception as e:
+            logger.debug(f"[Paper] Compound engine update failed (non-fatal): {e}")
+
         logger.info(
             f"[Paper] Trade: {r_multiple:+.2f}R @ {risk_pct:.2f}% risk | "
             f"Equity ${old_equity:,.2f} → ${new_equity:,.2f} | "
             f"Total {self._state['total_return_pct']:+.2f}%"
         )
+
+    def _get_current_tier(self, equity: float) -> str:
+        try:
+            from Sub_Projects.Trading.compounding_engine import CompoundingEngine
+            return CompoundingEngine()._get_tier_label(equity)
+        except Exception:
+            return ""
 
     # ─────────────────────────────────────────────────────────────────────────
     # STATS — FIX M5: Sharpe uses actual equity returns

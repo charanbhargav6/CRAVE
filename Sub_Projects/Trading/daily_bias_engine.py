@@ -489,61 +489,20 @@ class DailyBiasEngine:
 
     def _get_ohlcv(self, symbol: str, timeframe: str,
                     limit: int) -> Optional[pd.DataFrame]:
-        """Fetch OHLCV via data router - handles all markets correctly."""
+        """Fetch OHLCV via MarketDataRouter — single source of truth.
+        
+        The router handles Alpaca/Binance primary sources and falls back
+        to yfinance with correct symbol mapping (XAUUSD=X → GC=F, etc.).
+        No direct yfinance calls here — prevents 404 errors.
+        """
         try:
             from Sub_Projects.Trading.data.market_data_router import get_data_router
             df = get_data_router().get_ohlcv(symbol, timeframe, limit=limit)
             if df is not None and len(df) >= 10:
                 return df
-        except Exception:
-            pass
-        # Original yfinance fallback below
-        try:
-            # Try database cache first (saves API calls)
-            from Sub_Projects.Trading.database_manager import db
-            cached = db.get_cached_ohlcv(symbol, timeframe, limit=limit)
-            if cached is not None and len(cached) >= limit // 2:
-                return cached
-        except Exception:
-            pass
-
-        # Fall back to yfinance (works for backtesting + paper trading)
-        try:
-            import yfinance as yf
-            from datetime import timedelta
-            days_map = {"1d": limit + 50, "1wk": limit * 7 + 30}
-            days = days_map.get(timeframe, limit * 2)
-            end   = datetime.now()
-            start = end - timedelta(days=days)
-            df    = yf.download(symbol, start=start, end=end,
-                                 interval=timeframe, progress=False)
-            if df is None or df.empty:
-                return None
-
-            df = df.reset_index()
-            if isinstance(df.columns, pd.MultiIndex):
-                df.columns = [c[0] for c in df.columns]
-
-            col_map = {}
-            for col in df.columns:
-                cl = str(col).lower()
-                if "date" in cl: col_map[col] = "time"
-                elif cl == "open":   col_map[col] = "open"
-                elif cl == "high":   col_map[col] = "high"
-                elif cl == "low":    col_map[col] = "low"
-                elif cl == "close":  col_map[col] = "close"
-                elif cl == "volume": col_map[col] = "volume"
-
-            df = df.rename(columns=col_map)
-            if "volume" not in df.columns:
-                df["volume"] = 0
-            df["time"] = pd.to_datetime(df["time"])
-            df = df[["time", "open", "high", "low", "close", "volume"]].dropna()
-            return df.reset_index(drop=True).tail(limit)
-
         except Exception as e:
             logger.error(f"[Bias] OHLCV fetch failed for {symbol} {timeframe}: {e}")
-            return None
+        return None
 
     def _check_calendar(self, symbol: str) -> Optional[str]:
         """Check if there's a red-folder event in the next 4 hours."""

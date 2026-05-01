@@ -1,0 +1,347 @@
+{
+  "BTCUSD": {
+    "Symbol": "BTCUSD",
+    "Asset_Class": "Crypto",
+    "Strategy": "SMC v9.3 (OB+FVG+CHoCH+Volume)",
+    "Period": "30 Days",
+    "Interval": "1h",
+    "Min_Confidence": "40%",
+    "Risk_Per_Trade": "2.0%",
+    "SL_Multiplier": "1.5\u00d7 ATR",
+    "Candles_Total": 2155,
+    "Candles_Test_Window": 721,
+    "Signals": 115,
+    "Skipped_Unknown_Trend": 324,
+    "Wins": 59,
+    "Losses": 52,
+    "Win_Rate": "51.3%",
+    "Expectancy_R": "0.149R per trade",
+    "Best_Trade_R": "+1.5R",
+    "Worst_Trade_R": "-1.0R",
+    "Total_Return": "35.16%",
+    "Max_Drawdown": "-30.78%",
+    "Profit_Factor": "1.32",
+    "Sharpe_Ratio": "2.08",
+    "Grade_Breakdown": {
+      "A+": {
+        "trades": 1,
+        "win_rate": "0.0%",
+        "expectancy_r": -1.0
+      },
+      "A": {
+        "trades": 17,
+        "win_rate": "35.3%",
+        "expectancy_r": -0.29
+      },
+      "B+": {
+        "trades": 93,
+        "win_rate": "57.0%",
+        "expectancy_r": 0.24
+      }
+    },
+    "Verdict": "\u26a0\ufe0f MARGINAL \u2014 Edge is thin. Raise min_confidence to 55+."
+  },
+  "ETHUSD": {
+    "Symbol": "ETHUSD",
+    "Asset_Class": "Crypto",
+    "Strategy": "SMC v9.3 (OB+FVG+CHoCH+Volume)",
+    "Period": "30 Days",
+    "Interval": "1h",
+    "Min_Confidence": "40%",
+    "Risk_Per_Trade": "2.0%",
+    "SL_Multiplier": "1.5\u00d7 ATR",
+    "Candles_Total": 2156,
+    "Candles_Test_Window": 721,
+    "Signals": 107,
+    "Skipped_Unknown_Trend": 394,
+    "Wins": 38,
+    "Losses": 63,
+    "Win_Rate": "35.5%",
+    "Expectancy_R": "-0.208R per trade",
+    "Best_Trade_R": "+1.5R",
+    "Worst_Trade_R": "-1.0R",
+    "Total_Return": "-35.83%",
+    "Max_Drawdown": "-42.39%",
+    "Profit_Factor": "0.67",
+    "Sharpe_Ratio": "-3.10",
+    "Grade_Breakdown": {
+      "A+": {
+        "trades": 1,
+        "win_rate": "100.0%",
+        "expectancy_r": 1.5
+      },
+      "A": {
+        "trades": 18,
+        "win_rate": "27.8%",
+        "expectancy_r": -0.42
+      },
+      "B+": {
+        "trades": 82,
+        "win_rate": "39.0%",
+        "expectancy_r": -0.18
+      }
+    },
+    "Verdict": "\u274c REJECTED \u2014 Negative expectancy. Do NOT trade live."
+  },
+  "SOLUSD": {
+    "Symbol": "SOLUSD",
+    "Asset_Class": "Crypto",
+    "Strategy": "SMC v9.3 (OB+FVG+CHoCH+Volume)",
+    "Period": "30 Days",
+    "Interval": "1h",
+    "Min_Confidence": "40%",
+    "Risk_Per_Trade": "2.0%",
+    "SL_Multiplier": "1.5\u00d7 ATR",
+    "Candles_Total": 2156,
+    "Candles_Test_Window": 721,
+    "Signals": 138,
+    "Skipped_Unknown_Trend": 363,
+    "Wins": 50,
+    "Losses": 87,
+    "Win_Rate": "36.2%",
+    "Expectancy_R": "-0.212R per trade",
+    "Best_Trade_R": "+1.5R",
+    "Worst_Trade_R": "-1.0R",
+    "Total_Return": "-45.83%",
+    "Max_Drawdown": "-50.91%",
+    "Profit_Factor": "0.67",
+    "Sharpe_Ratio": "-3.12",
+    "Grade_Breakdown": {
+      "A+": {
+        "trades": 1,
+        "win_rate": "0.0%",
+        "expectancy_r": -1.0
+      },
+      "A": {
+        "trades": 22,
+        "win_rate": "40.9%",
+        "expectancy_r": -0.02
+      },
+      "B+": {
+        "trades": 114,
+        "win_rate": "36.0%",
+        "expectancy_r": -0.24
+      }
+    },
+    "Verdict": "\u274c REJECTED \u2014 Negative expectancy. Do NOT trade live."
+  },
+  "XAUUSD": {
+    "Symbol": "XAUUSD",
+    "Asset_Class": "Gold",
+    "Strategy": "SMC v9.3 (OB+FVG+CHoCH+Volume)",
+    "Period": "30 Days",
+    "Interval": "1h",
+    "Min_Confidence": "40%",
+    "Risk_Per_Trade": "2.0%",
+    "SL_Multiplier": "2.0\u00d7 ATR",
+    "Candles_Total": 1420,
+    "Candles_Test_Window": 478,
+    "Signals": 105,
+    "Skipped_Unknown_Trend": 199,
+    "Wins": 52,
+    "Losses": 39,
+    "Win_Rate": "49.5%",
+    "Expectancy_R": "0.176R per trade",
+    "Best_Trade_R": "+1.5R",
+    "Worst_Trade_R": "-1.0R",
+    "Total_Return": "34.74%",
+    "Max_Drawdown": "-27.90%",
+    "Profit_Factor": "1.41",
+    "Sharpe_Ratio": "2.57",
+    "Grade_Breakdown": {
+      "A+": {
+        "trades": 3,
+        "win_rate": "100.0%",
+        "expectancy_r": 0.83
+      },
+      "A": {
+        "trades": 4,
+        "win_rate": "75.0%",
+        "expectancy_r": 0.38
+      },
+      "B+": {
+        "trades": 84,
+        "win_rate": "54.8%",
+        "expectancy_r": 0.14
+      }
+    },
+    "Verdict": "\u26a0\ufe0f WEAK \u2014 Positive but unreliable. Do not trade live yet.",
+    "Warning": "Gold needs 60+ days for a valid backtest (you passed 30). Results may be unreliable. Rerun with days=60 or higher."
+  },
+  "EURUSD": {
+    "Symbol": "EURUSD",
+    "Asset_Class": "Forex",
+    "Strategy": "SMC v9.3 (OB+FVG+CHoCH+Volume)",
+    "Period": "30 Days",
+    "Interval": "1h",
+    "Min_Confidence": "40%",
+    "Risk_Per_Trade": "2.0%",
+    "SL_Multiplier": "2.5\u00d7 ATR",
+    "Candles_Total": 1518,
+    "Candles_Test_Window": 523,
+    "Signals": 131,
+    "Skipped_Unknown_Trend": 219,
+    "Wins": 65,
+    "Losses": 41,
+    "Win_Rate": "49.6%",
+    "Expectancy_R": "0.137R per trade",
+    "Best_Trade_R": "+1.5R",
+    "Worst_Trade_R": "-1.0R",
+    "Total_Return": "30.93%",
+    "Max_Drawdown": "-23.10%",
+    "Profit_Factor": "1.35",
+    "Sharpe_Ratio": "2.22",
+    "Grade_Breakdown": {
+      "A": {
+        "trades": 9,
+        "win_rate": "33.3%",
+        "expectancy_r": -0.28
+      },
+      "B+": {
+        "trades": 97,
+        "win_rate": "63.9%",
+        "expectancy_r": 0.18
+      }
+    },
+    "Verdict": "\u26a0\ufe0f WEAK \u2014 Positive but unreliable. Do not trade live yet.",
+    "Warning": "Forex needs 90+ days for a valid backtest (you passed 30). Results may be unreliable. Rerun with days=90 or higher."
+  },
+  "GBPUSD": {
+    "Symbol": "GBPUSD",
+    "Asset_Class": "Forex",
+    "Strategy": "SMC v9.3 (OB+FVG+CHoCH+Volume)",
+    "Period": "30 Days",
+    "Interval": "1h",
+    "Min_Confidence": "40%",
+    "Risk_Per_Trade": "2.0%",
+    "SL_Multiplier": "2.5\u00d7 ATR",
+    "Candles_Total": 1518,
+    "Candles_Test_Window": 523,
+    "Signals": 98,
+    "Skipped_Unknown_Trend": 240,
+    "Wins": 22,
+    "Losses": 52,
+    "Win_Rate": "22.4%",
+    "Expectancy_R": "-0.351R per trade",
+    "Best_Trade_R": "+1.5R",
+    "Worst_Trade_R": "-1.0R",
+    "Total_Return": "-41.58%",
+    "Max_Drawdown": "-48.45%",
+    "Profit_Factor": "0.50",
+    "Sharpe_Ratio": "-5.42",
+    "Grade_Breakdown": {
+      "A+": {
+        "trades": 1,
+        "win_rate": "0.0%",
+        "expectancy_r": -1.0
+      },
+      "A": {
+        "trades": 7,
+        "win_rate": "0.0%",
+        "expectancy_r": -1.0
+      },
+      "B+": {
+        "trades": 66,
+        "win_rate": "33.3%",
+        "expectancy_r": -0.27
+      }
+    },
+    "Verdict": "\u274c REJECTED \u2014 Negative expectancy. Do NOT trade live.",
+    "Warning": "Forex needs 90+ days for a valid backtest (you passed 30). Results may be unreliable. Rerun with days=90 or higher."
+  },
+  "USDJPY": {
+    "Symbol": "USDJPY",
+    "Asset_Class": "Forex",
+    "Strategy": "SMC v9.3 (OB+FVG+CHoCH+Volume)",
+    "Period": "30 Days",
+    "Interval": "1h",
+    "Min_Confidence": "40%",
+    "Risk_Per_Trade": "2.0%",
+    "SL_Multiplier": "2.5\u00d7 ATR",
+    "Candles_Total": 1509,
+    "Candles_Test_Window": 519,
+    "Signals": 72,
+    "Skipped_Unknown_Trend": 288,
+    "Wins": 10,
+    "Losses": 33,
+    "Win_Rate": "13.9%",
+    "Expectancy_R": "-0.628R per trade",
+    "Best_Trade_R": "+1.5R",
+    "Worst_Trade_R": "-1.0R",
+    "Total_Return": "-42.17%",
+    "Max_Drawdown": "-44.39%",
+    "Profit_Factor": "0.18",
+    "Sharpe_Ratio": "-14.42",
+    "Grade_Breakdown": {
+      "A": {
+        "trades": 6,
+        "win_rate": "0.0%",
+        "expectancy_r": -1.0
+      },
+      "B+": {
+        "trades": 37,
+        "win_rate": "27.0%",
+        "expectancy_r": -0.57
+      }
+    },
+    "Verdict": "\u274c REJECTED \u2014 Negative expectancy. Do NOT trade live.",
+    "Warning": "Forex needs 90+ days for a valid backtest (you passed 30). Results may be unreliable. Rerun with days=90 or higher."
+  },
+  "AUDUSD": {
+    "Symbol": "AUDUSD",
+    "Asset_Class": "Forex",
+    "Strategy": "SMC v9.3 (OB+FVG+CHoCH+Volume)",
+    "Period": "30 Days",
+    "Interval": "1h",
+    "Min_Confidence": "40%",
+    "Risk_Per_Trade": "2.0%",
+    "SL_Multiplier": "2.5\u00d7 ATR",
+    "Candles_Total": 1521,
+    "Candles_Test_Window": 523,
+    "Signals": 107,
+    "Skipped_Unknown_Trend": 241,
+    "Wins": 42,
+    "Losses": 54,
+    "Win_Rate": "39.3%",
+    "Expectancy_R": "-0.146R per trade",
+    "Best_Trade_R": "+1.5R",
+    "Worst_Trade_R": "-1.0R",
+    "Total_Return": "-25.95%",
+    "Max_Drawdown": "-53.59%",
+    "Profit_Factor": "0.74",
+    "Sharpe_Ratio": "-2.26",
+    "Grade_Breakdown": {
+      "A+": {
+        "trades": 1,
+        "win_rate": "100.0%",
+        "expectancy_r": 1.5
+      },
+      "A": {
+        "trades": 2,
+        "win_rate": "0.0%",
+        "expectancy_r": -1.0
+      },
+      "B+": {
+        "trades": 93,
+        "win_rate": "44.1%",
+        "expectancy_r": -0.15
+      }
+    },
+    "Verdict": "\u274c REJECTED \u2014 Negative expectancy. Do NOT trade live.",
+    "Warning": "Forex needs 90+ days for a valid backtest (you passed 30). Results may be unreliable. Rerun with days=90 or higher."
+  },
+  "_portfolio": {
+    "starting_equity": 10000.0,
+    "final_equity": 2073.42,
+    "total_return_pct": -79.27,
+    "total_trades": 759,
+    "wins": 338,
+    "losses": 421,
+    "win_rate": 44.5,
+    "expectancy_r": -0.092,
+    "max_drawdown_pct": 87.83,
+    "profit_factor": 0.83,
+    "best_r": 1.5,
+    "worst_r": -1.0
+  }
+}

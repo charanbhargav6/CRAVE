@@ -20,11 +20,26 @@ logger = logging.getLogger("crave.trading.risk")
 class RiskAgent:
     def __init__(self, telegram_agent=None):
         self.telegram               = telegram_agent
-        self.max_risk_per_trade     = 0.02    # 2% per trade
+        self.max_risk_per_trade     = 0.02    # fallback — overridden by compound engine
         self.max_account_drawdown   = 0.05    # 5% trailing DD kill switch
         self.daily_loss_limit       = 0.02    # 2% max loss per session day
         self.min_rr_ratio           = 1.5     # Minimum acceptable R:R
         self.max_consecutive_losses = 3       # Kill switch after 3 L's in a row
+
+        # ── v10.5: Compounding engine ─────────────────────────────────────
+        # Risk % scales automatically with account size:
+        #   <$500   → 0.5%  (micro — small $ risk, protects tiny accounts)
+        #   <$2000  → 0.75% (small)
+        #   <$5000  → 1.0%  (standard)
+        #   <$20000 → 1.5%  (growth)
+        #   $20000+ → 2.0%  (professional)
+        try:
+            from Sub_Projects.Trading.compounding_engine import get_compound_engine
+            self._compound = get_compound_engine()
+            logger.info("[RiskAgent] Compounding engine loaded.")
+        except Exception as e:
+            self._compound = None
+            logger.debug(f"[RiskAgent] Compound engine unavailable (non-fatal): {e}")
 
         # ── State tracking ──
         self.equity_peak          = None
@@ -141,7 +156,10 @@ class RiskAgent:
         if price_risk == 0:
             return 0.0
 
-        if use_kelly and len(self.trade_log) >= 20:
+        # ── v10.5: Use compound engine tier-based risk ────────────────────
+        if self._compound:
+            risk_fraction = self._compound.get_risk_pct(current_equity)
+        elif use_kelly and len(self.trade_log) >= 20:
             wins  = [t for t in self.trade_log if t['result'] == 'W']
             loss_ = [t for t in self.trade_log if t['result'] == 'L']
             if wins and loss_:

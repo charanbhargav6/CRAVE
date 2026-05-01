@@ -337,7 +337,108 @@ class TelegramInterface:
             "/paper":     self._cmd_paper,
             "/live":      self._cmd_live,
             "/help":      self._cmd_help,
+            # ── v10.5: Compounding commands ───────────────────────────────
+            "/compound":  self._cmd_compound,
+            "/growth":    self._cmd_growth,
+            "/canitrade": self._cmd_canitrade,
         }
+
+    # ── v10.5 Compounding commands ────────────────────────────────────────────
+
+    def _cmd_compound(self, args: str):
+        """
+        /compound — Show current compounding state.
+        Equity, tier, risk/trade, win rate, milestone progress.
+        """
+        try:
+            from Sub_Projects.Trading.compounding_engine import get_compound_engine
+            s    = get_compound_engine().get_status()
+            wins = s["wins"]
+            loss = s["losses"]
+            tot  = s["total_trades"]
+            next_m = s["next_milestone"]
+            pct_to_next = (
+                (s["equity"] / next_m * 100) if next_m else 100
+            )
+            bar_filled = int(pct_to_next / 10)
+            bar = "█" * bar_filled + "░" * (10 - bar_filled)
+
+            msg = (
+                f"📈 <b>CRAVE Compounding State</b>\n\n"
+                f"💰 Equity: <b>${s['equity']:,.2f}</b>\n"
+                f"🚀 Growth: <b>{s['growth_pct']:+.2f}%</b> "
+                f"(from ${s['starting_equity']:,.0f})\n"
+                f"📉 Max DD: {s['max_drawdown_pct']:.2f}%\n\n"
+                f"🎯 Risk tier: <b>{s['risk_tier']}</b>\n"
+                f"⚡ Risk/trade: <b>${s['dollar_risk']:.2f}</b> "
+                f"({s['risk_pct']:.2f}%)\n\n"
+                f"📊 Trades: {tot} | W: {wins} L: {loss} | "
+                f"WR: {s['win_rate']:.1f}%\n\n"
+            )
+            if next_m:
+                msg += (
+                    f"🏁 Next milestone: <b>${next_m:,.0f}</b>\n"
+                    f"[{bar}] {pct_to_next:.0f}%\n"
+                    f"Need: ${next_m - s['equity']:,.2f} more\n"
+                )
+            self.send(msg)
+        except Exception as e:
+            self.send(f"❌ Compound error: {e}")
+
+    def _cmd_growth(self, args: str):
+        """
+        /growth [months] [monthly_pct]
+        Project equity growth with compounding.
+        Example: /growth 12 7 → 12-month projection at 7%/month
+        """
+        try:
+            from Sub_Projects.Trading.compounding_engine import get_compound_engine
+            parts   = args.strip().split()
+            months  = int(parts[0]) if len(parts) > 0 else 12
+            monthly = float(parts[1]) if len(parts) > 1 else 7.0
+            months  = min(months, 36)
+
+            curve = get_compound_engine().project_growth(months, monthly)
+            eq    = get_compound_engine().get_status()["equity"]
+
+            msg = (
+                f"📈 <b>Growth Projection</b>\n"
+                f"Starting: ${eq:,.2f} | Rate: {monthly}%/month\n\n"
+            )
+            checkpoints = [1, 3, 6, 12, 18, 24, 36]
+            for p in curve:
+                if p["month"] in checkpoints and p["month"] <= months:
+                    months_label = f"{p['month']} month{'s' if p['month']>1 else ''}"
+                    msg += (
+                        f"<b>{months_label:>8}</b>: "
+                        f"${p['equity']:>10,.2f}  "
+                        f"[{p['tier'].split('(')[0].strip()}  "
+                        f"risk/trade: ${p['dollar_risk']:.2f}]\n"
+                    )
+            total_growth = (curve[-1]["equity"] - eq) / eq * 100
+            msg += f"\n<b>Total: +{total_growth:.1f}%</b>"
+            self.send(msg)
+        except Exception as e:
+            self.send(f"❌ Growth error: {e}")
+
+    def _cmd_canitrade(self, args: str):
+        """
+        /canitrade [amount]
+        Check which instruments you can trade at current (or specified) equity.
+        Example: /canitrade 500
+        """
+        try:
+            from Sub_Projects.Trading.compounding_engine import (
+                get_compound_engine, what_can_i_trade
+            )
+            parts = args.strip().split()
+            if parts:
+                equity = float(parts[0])
+            else:
+                equity = get_compound_engine().get_status()["equity"]
+            self.send(f"<pre>{what_can_i_trade(equity)}</pre>")
+        except Exception as e:
+            self.send(f"❌ Error: {e}")
 
     def _cmd_start(self, args: str):
         self._cmd_status(args)

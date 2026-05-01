@@ -322,55 +322,15 @@ class InstrumentScanner:
 
     def _get_ohlcv(self, symbol: str, timeframe: str,
                     limit: int) -> Optional[pd.DataFrame]:
-        """Fetch OHLCV via data router - handles all markets."""
+        """Fetch OHLCV via MarketDataRouter — single source of truth."""
         try:
             from Sub_Projects.Trading.data.market_data_router import get_data_router
             df = get_data_router().get_ohlcv(symbol, timeframe, limit=limit)
             if df is not None and len(df) >= 10:
                 return df
-        except Exception:
-            pass
-        # Original fallback below
-        try:
-            from Sub_Projects.Trading.database_manager import db
-            cached = db.get_cached_ohlcv(symbol, timeframe, limit=limit)
-            if cached is not None and len(cached) >= 50:
-                return cached
-        except Exception:
-            pass
-
-        try:
-            import yfinance as yf
-            tf_map = {"1h": "1h", "4h": "4h", "1d": "1d"}
-            tf     = tf_map.get(timeframe, "1h")
-            days   = max(limit // 16 + 10, 30)   # rough estimate
-            end    = datetime.now()
-            start  = end - timedelta(days=days)
-            df     = yf.download(symbol, start=start, end=end,
-                                  interval=tf, progress=False)
-            if df is None or df.empty:
-                return None
-            df = df.reset_index()
-            if isinstance(df.columns, pd.MultiIndex):
-                df.columns = [c[0] for c in df.columns]
-            col_map = {}
-            for col in df.columns:
-                cl = str(col).lower()
-                if "date" in cl: col_map[col] = "time"
-                elif cl == "open":   col_map[col] = "open"
-                elif cl == "high":   col_map[col] = "high"
-                elif cl == "low":    col_map[col] = "low"
-                elif cl == "close":  col_map[col] = "close"
-                elif cl == "volume": col_map[col] = "volume"
-            df = df.rename(columns=col_map)
-            if "volume" not in df.columns:
-                df["volume"] = 0
-            df["time"] = pd.to_datetime(df["time"])
-            df = df[["time","open","high","low","close","volume"]].dropna()
-            return df.reset_index(drop=True)
         except Exception as e:
-            logger.debug(f"[Scanner] OHLCV fetch failed {symbol}: {e}")
-            return None
+            logger.error(f"[Scanner] OHLCV fetch failed {symbol}: {e}")
+        return None
 
     def _log_and_notify(self, results: list):
         """Log ranking and send Telegram summary."""
