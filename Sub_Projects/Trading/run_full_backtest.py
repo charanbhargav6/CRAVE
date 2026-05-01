@@ -209,6 +209,11 @@ tr:hover td{{background:#ffffff05}}
 .verdict.warn{{background:#fbbf2415;border-color:#fbbf2440}}
 .verdict.bad{{background:#f8717115;border-color:#f8717140}}
 @media(max-width:900px){{.charts-row{{grid-template-columns:1fr}}.stats-grid{{padding:20px}}}}
+@media print {{
+  body {{ background: #0a0a0f !important; -webkit-print-color-adjust: exact; }}
+  .scroll-table {{ max-height: none !important; overflow: visible !important; }}
+  .chart-container, .stat-card, table, th, td {{ page-break-inside: avoid; }}
+}}
 </style>
 </head>
 <body>
