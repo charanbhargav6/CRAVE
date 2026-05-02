@@ -96,203 +96,218 @@ class StrategyAgent:
 
     # ── 1. FVG DETECTOR ──────────────────────────────────────────────────────
 
-    def _identify_fvgs(self, df: pd.DataFrame) -> list:
+    def _build_fvg_catalog(self, df: pd.DataFrame) -> list[dict]:
         """
-        Fair Value Gap (Imbalance) Detector.
-        Bullish FVG : c3_low > c1_high  (upward displacement)
-        Bearish FVG : c3_high < c1_low  (downward displacement)
-
-        FIX v9.1 — Mitigation logic was backwards.
-        OLD: touched = current_price <= c3_low  ← triggers BEFORE price enters zone
-        NEW: A bullish FVG is mitigated only when price trades THROUGH the entire zone
-             (i.e., closes below the zone bottom: c1_high).
-             A bearish FVG is mitigated when price closes above the zone top: c1_low.
-        An FVG that price is currently INSIDE is still valid — that's your entry zone.
+        Scans the FULL dataframe once and records every FVG with:
+        - The exact candle it formed
+        - Its price boundaries
+        - Whether it's bullish or bearish
         """
-        fvgs = []
-        if len(df) < 3:
-            return fvgs
+        catalog = []
+        for i in range(1, len(df) - 1):
+            prev   = df.iloc[i - 1]
+            curr   = df.iloc[i]
+            nxt    = df.iloc[i + 1]
 
-        current_price = df['close'].iloc[-1]
+            atr = curr['atr'] if 'atr' in curr and not pd.isna(curr['atr']) and curr['atr'] > 0 else 1.0
 
-        for i in range(len(df) - 2):
-            c1_high = df['high'].iloc[i]
-            c1_low  = df['low'].iloc[i]
-            c3_low  = df['low'].iloc[i + 2]
-            c3_high = df['high'].iloc[i + 2]
-            c2_time = df['time'].iloc[i + 1]
-            c2_time_str = (
-                c2_time.strftime("%Y-%m-%d %H:%M")
-                if hasattr(c2_time, 'strftime') else str(c2_time)
-            )
+            # Bullish FVG: gap between prev candle's high and next candle's low
+            if nxt['low'] > prev['high']:
+                catalog.append({
+                    'type':       'BULL',
+                    'formed_at':  i,
+                    'top':        nxt['low'],
+                    'bottom':     prev['high'],
+                    'midpoint':   (nxt['low'] + prev['high']) / 2,
+                    'size_atr':   (nxt['low'] - prev['high']) / atr,
+                })
 
-            min_gap_size = c1_high * 0.0003  # 0.03% noise filter
+            # Bearish FVG: gap between prev candle's low and next candle's high
+            elif nxt['high'] < prev['low']:
+                catalog.append({
+                    'type':       'BEAR',
+                    'formed_at':  i,
+                    'top':        prev['low'],
+                    'bottom':     nxt['high'],
+                    'midpoint':   (prev['low'] + nxt['high']) / 2,
+                    'size_atr':   (prev['low'] - nxt['high']) / atr,
+                })
 
-            if c3_low > c1_high:
-                gap = round(c3_low - c1_high, 5)
-                if gap > min_gap_size:
-                    # FIX: mitigated = price has traded BELOW the zone bottom (fully filled)
-                    mitigated = current_price < c1_high
-                    fvgs.append({
-                        "type":      "Bullish FVG",
-                        "time":      c2_time_str,
-                        "gap_size":  gap,
-                        "zone":      [round(c1_high, 5), round(c3_low, 5)],
-                        "mitigated": mitigated,
-                        # NEW: Is price currently inside the zone? — this is the entry trigger
-                        "price_inside": c1_high <= current_price <= c3_low,
-                    })
+        return catalog
 
-            elif c3_high < c1_low:
-                gap = round(c1_low - c3_high, 5)
-                if gap > min_gap_size:
-                    # FIX: mitigated = price has traded ABOVE the zone top (fully filled)
-                    mitigated = current_price > c1_low
-                    fvgs.append({
-                        "type":      "Bearish FVG",
-                        "time":      c2_time_str,
-                        "gap_size":  gap,
-                        "zone":      [round(c3_high, 5), round(c1_low, 5)],
-                        "mitigated": mitigated,
-                        "price_inside": c3_high <= current_price <= c1_low,
-                    })
+    def _query_active_fvgs(self, catalog: list, df: pd.DataFrame, i: int, max_age: int = None) -> list[dict]:
+        """
+        At candle i, returns FVGs that:
+        1. Were formed BEFORE candle i (visible in real-time)
+        2. Have NOT been mitigated (price has not fully traded through them)
+        3. Optionally within max_age candles (None = entire history — matches Run 1)
+        """
+        current_price = df.iloc[i]['close']
+        active = []
 
-        return fvgs[-5:]
+        for fvg in catalog:
+            if fvg['formed_at'] >= i:
+                continue
+
+            if max_age is not None and (i - fvg['formed_at']) > max_age:
+                continue
+
+            candles_since = df.iloc[fvg['formed_at']:i]
+
+            if fvg['type'] == 'BULL':
+                if (candles_since['close'] < fvg['bottom']).any():
+                    continue
+                if current_price > fvg['top'] * 1.005:  # 0.5% tolerance above top
+                    continue
+            elif fvg['type'] == 'BEAR':
+                if (candles_since['close'] > fvg['top']).any():
+                    continue
+                if current_price < fvg['bottom'] * 0.995:
+                    continue
+
+            active.append(fvg)
+
+        return sorted(active, key=lambda x: x['formed_at'], reverse=True)
 
     # ── 2. ORDER BLOCK DETECTOR ──────────────────────────────────────────────
 
-    def _identify_order_blocks(self, df: pd.DataFrame) -> list:
+    def _build_ob_catalog(self, df: pd.DataFrame) -> list[dict]:
         """
-        Order Block = the last opposing candle before a displacement move.
-
-        FIX v9.1 — Displacement threshold raised from 1.5× to 2.0× avg body
-        AND requires candle range (high-low) to exceed 1.2× ATR.
-        This eliminates false OBs in ranging/Asian-session price action.
+        Scans FULL history once. An Order Block is the last bearish candle before
+        a bullish impulse (bull OB) or the last bullish candle before a bearish
+        impulse (bear OB). Uses ATR-normalized impulse threshold.
         """
-        obs = []
-        if len(df) < 5:
-            return obs
+        catalog = []
+        impulse_threshold = 1.5
 
-        body_sizes = (df['close'] - df['open']).abs()
-        avg_body   = body_sizes.rolling(20).mean()
+        for i in range(2, len(df) - 3):
+            curr = df.iloc[i]
+            atr = curr['atr'] if 'atr' in curr and not pd.isna(curr['atr']) and curr['atr'] > 0 else 1.0
 
-        # NEW: ATR for displacement confirmation (using simple rolling for speed)
-        candle_range = df['high'] - df['low']
-        avg_atr      = candle_range.rolling(14).mean()
+            # Bullish OB: last bearish candle before upward impulse
+            if curr['close'] < curr['open']:
+                impulse_move = df.iloc[i+1:i+4]['close'].max() - curr['close']
+                if impulse_move > impulse_threshold * atr:
+                    catalog.append({
+                        'type':      'BULL',
+                        'formed_at': i,
+                        'top':       curr['open'],
+                        'bottom':    curr['close'],
+                        'high':      curr['high'],
+                        'low':       curr['low'],
+                        'strength':  impulse_move / atr,
+                    })
 
-        current_price = df['close'].iloc[-1]
+            # Bearish OB: last bullish candle before downward impulse
+            elif curr['close'] > curr['open']:
+                impulse_move = curr['close'] - df.iloc[i+1:i+4]['close'].min()
+                if impulse_move > impulse_threshold * atr:
+                    catalog.append({
+                        'type':      'BEAR',
+                        'formed_at': i,
+                        'top':       curr['close'],
+                        'bottom':    curr['open'],
+                        'high':      curr['high'],
+                        'low':       curr['low'],
+                        'strength':  impulse_move / atr,
+                    })
 
-        for i in range(2, len(df) - 1):
-            disp_body  = abs(df['close'].iloc[i] - df['open'].iloc[i])
-            disp_range = df['high'].iloc[i] - df['low'].iloc[i]
+        return catalog
 
-            if pd.isna(avg_body.iloc[i]) or avg_body.iloc[i] == 0:
+    def _query_active_obs(self, catalog: list, df: pd.DataFrame, i: int) -> list[dict]:
+        """
+        At candle i, returns OBs that:
+        1. Formed before candle i
+        2. Have NOT been broken (price hasn't closed THROUGH the OB zone)
+        3. Are still in play (price hasn't moved too far away)
+        """
+        current_high  = df.iloc[i]['high']
+        current_low   = df.iloc[i]['low']
+        active = []
+
+        for ob in catalog:
+            if ob['formed_at'] >= i:
                 continue
-            if pd.isna(avg_atr.iloc[i]) or avg_atr.iloc[i] == 0:
-                continue
 
-            # FIX: Require BOTH body >= 2× avg body AND range >= 1.2× ATR
-            if disp_body < avg_body.iloc[i] * 2.0:
-                continue
-            if disp_range < avg_atr.iloc[i] * 1.2:
-                continue  # Not a true displacement — just a normal candle
+            candles_since = df.iloc[ob['formed_at']:i]
 
-            if df['close'].iloc[i] > df['open'].iloc[i]:
-                for j in range(i - 1, max(i - 5, 0), -1):
-                    if df['close'].iloc[j] < df['open'].iloc[j]:
-                        ob_high    = df['high'].iloc[j]
-                        ob_low     = df['low'].iloc[j]
-                        is_breaker = current_price < ob_low
-                        obs.append({
-                            "type":      "Bearish Breaker" if is_breaker else "Bullish OB",
-                            "zone":      [round(ob_low, 5), round(ob_high, 5)],
-                            "time":      (df['time'].iloc[j].strftime("%Y-%m-%d %H:%M")
-                                          if hasattr(df['time'].iloc[j], 'strftime')
-                                          else str(df['time'].iloc[j])),
-                            "mitigated": is_breaker,
-                        })
-                        break
+            if ob['type'] == 'BULL':
+                if (candles_since['close'] < ob['bottom']).any():
+                    continue
+                if current_low > ob['top'] * 1.03:
+                    continue
 
-            elif df['close'].iloc[i] < df['open'].iloc[i]:
-                for j in range(i - 1, max(i - 5, 0), -1):
-                    if df['close'].iloc[j] > df['open'].iloc[j]:
-                        ob_high    = df['high'].iloc[j]
-                        ob_low     = df['low'].iloc[j]
-                        is_breaker = current_price > ob_high
-                        obs.append({
-                            "type":      "Bullish Breaker" if is_breaker else "Bearish OB",
-                            "zone":      [round(ob_low, 5), round(ob_high, 5)],
-                            "time":      (df['time'].iloc[j].strftime("%Y-%m-%d %H:%M")
-                                          if hasattr(df['time'].iloc[j], 'strftime')
-                                          else str(df['time'].iloc[j])),
-                            "mitigated": is_breaker,
-                        })
-                        break
+            elif ob['type'] == 'BEAR':
+                if (candles_since['close'] > ob['top']).any():
+                    continue
+                if current_high < ob['bottom'] * 0.97:
+                    continue
 
-        seen   = set()
-        unique = []
-        for ob in reversed(obs):
-            key = (ob['type'], ob['zone'][0])
-            if key not in seen:
-                seen.add(key)
-                unique.append(ob)
-            if len(unique) == 4:
-                break
-        return unique
+            active.append(ob)
+
+        return sorted(active, key=lambda x: x['strength'], reverse=True)
 
     # ── 3. CHoCH / BOS DETECTOR ──────────────────────────────────────────────
 
-    def _detect_market_structure(self, df: pd.DataFrame) -> dict:
+    def _build_structure(self, df: pd.DataFrame, pivot_lookback: int = 10) -> list[dict]:
         """
-        FIX v9.1: BOS/CHoCH now requires a confirmed CANDLE CLOSE beyond the level.
-        The old code compared current_price (a tick) which fires prematurely and
-        creates phantom structure breaks on wicks that close back inside.
-
-        Also: swing levels now compare wick highs/lows (not closes) as per SMC canon.
+        Identifies ALL swing highs/lows and structure breaks on full history.
+        Uses a fixed pivot_lookback so the same pivots are identified regardless
+        of where in the loop you are.
         """
-        if len(df) < 20:
-            return {"event": "Insufficient data", "direction": "unknown"}
+        structure_events = []
+        pivot_highs = []
+        pivot_lows  = []
 
-        window = 5
+        for i in range(pivot_lookback, len(df) - pivot_lookback):
+            window_high = df.iloc[i - pivot_lookback : i + pivot_lookback + 1]['high']
+            window_low  = df.iloc[i - pivot_lookback : i + pivot_lookback + 1]['low']
 
-        # Vectorized structure detection (lightning fast)
-        is_high = df['high'] == df['high'].rolling(window=window*2+1, center=True).max()
-        is_low  = df['low']  == df['low'].rolling(window=window*2+1, center=True).min()
-        
-        high_idx = np.where(is_high)[0]
-        low_idx  = np.where(is_low)[0]
-        
-        highs = [(i, float(df['high'].iloc[i])) for i in high_idx if window <= i < len(df) - window]
-        lows  = [(i, float(df['low'].iloc[i])) for i in low_idx  if window <= i < len(df) - window]
+            if df.iloc[i]['high'] == window_high.max():
+                pivot_highs.append({'candle': i, 'price': df.iloc[i]['high']})
 
-        if len(highs) < 2 or len(lows) < 2:
-            return {"event": "Neutral", "direction": "unknown"}
+            if df.iloc[i]['low'] == window_low.min():
+                pivot_lows.append({'candle': i, 'price': df.iloc[i]['low']})
 
-        last_high = highs[-1][1]
-        prev_high = highs[-2][1]
-        last_low  = lows[-1][1]
-        prev_low  = lows[-2][1]
+        # Detect BOS (Break of Structure) and CHoCH (Change of Character)
+        for j in range(1, len(pivot_highs)):
+            prev_high = pivot_highs[j-1]['price']
+            curr_high = pivot_highs[j]['price']
+            at_candle = pivot_highs[j]['candle']
 
-        confirmed_close = df['close'].iloc[-1]
+            if curr_high > prev_high:
+                structure_events.append({
+                    'type': 'BOS_BULL', 'candle': at_candle,
+                    'level': prev_high, 'strength': curr_high - prev_high
+                })
+            elif curr_high < prev_high:
+                structure_events.append({
+                    'type': 'CHoCH_BEAR', 'candle': at_candle,
+                    'level': prev_high, 'strength': prev_high - curr_high
+                })
 
-        # Use pre-calculated SMAs if available, otherwise compute
-        if 'SMA_50' in df.columns:
-            sma50 = df['SMA_50'].iloc[-1]
-            sma20 = df['close'].rolling(20).mean().iloc[-1]
-        else:
-            sma50 = df['close'].rolling(50).mean().iloc[-1]
-            sma20 = df['close'].rolling(20).mean().iloc[-1]
-        in_uptrend = (not pd.isna(sma50) and not pd.isna(sma20)) and sma20 > sma50
+        for j in range(1, len(pivot_lows)):
+            prev_low = pivot_lows[j-1]['price']
+            curr_low = pivot_lows[j]['price']
+            at_candle = pivot_lows[j]['candle']
 
-        # FIX: Check confirmed_close, not a raw tick price
-        if confirmed_close > last_high:
-            event = "BOS Bullish" if in_uptrend else "CHoCH Bullish (Reversal)"
-            return {"event": event, "direction": "bullish", "broken_level": round(last_high, 5)}
-        elif confirmed_close < last_low:
-            event = "BOS Bearish" if not in_uptrend else "CHoCH Bearish (Reversal)"
-            return {"event": event, "direction": "bearish", "broken_level": round(last_low, 5)}
-        else:
-            return {"event": "Ranging / No Break", "direction": "neutral"}
+            if curr_low < prev_low:
+                structure_events.append({
+                    'type': 'BOS_BEAR', 'candle': at_candle,
+                    'level': prev_low, 'strength': prev_low - curr_low
+                })
+            elif curr_low > prev_low:
+                structure_events.append({
+                    'type': 'CHoCH_BULL', 'candle': at_candle,
+                    'level': prev_low, 'strength': curr_low - prev_low
+                })
+
+        return sorted(structure_events, key=lambda x: x['candle'])
+
+    def _query_last_structure(self, structure: list, i: int, lookback: int = 50) -> dict | None:
+        """Returns the most recent structure event before candle i."""
+        visible = [s for s in structure if s['candle'] < i and s['candle'] >= i - lookback]
+        return visible[-1] if visible else None
 
     # ── 4. LIQUIDITY SWEEP DETECTOR ──────────────────────────────────────────
     # No changes — logic was correct.
@@ -510,47 +525,51 @@ class StrategyAgent:
 
     # ── 10. MASTER ANALYSIS ───────────────────────────────────────────────────
 
-    def analyze_market_context(self, symbol: str, df: pd.DataFrame, macro_news: str = "") -> dict:
-        logger.debug(f"[StrategyAgent] Full SMC + Structure analysis for {symbol}...")
-
-        if df is None or len(df) < 20:
+    def analyze_market_context(self, symbol: str, df: pd.DataFrame, i: int, fvg_catalog: list, ob_catalog: list, structure: list, macro_news: str = "") -> dict:
+        if df is None or len(df) < 20 or i < 20:
             return {"error": "Insufficient data for analysis."}
 
-        df            = df.copy()
-        current_price = df['close'].iloc[-1]
+        current = df.iloc[i]
+        current_price = current['close']
+        
+        # Fast slice for stateless indicators (max 50 candles needed)
+        fast_window = df.iloc[max(0, i-50):i+1]
 
-        if 'SMA_50' not in df.columns:
-            df['SMA_50']  = df['close'].rolling(50).mean()
-        if 'SMA_200' not in df.columns:
-            df['SMA_200'] = df['close'].rolling(200).mean()
-        if 'EMA_21' not in df.columns:
-            df['EMA_21']  = _ema(df['close'], 21)
-
-        sma50  = df['SMA_50'].iloc[-1]
-        sma200 = df['SMA_200'].iloc[-1]
-        ema21  = df['EMA_21'].iloc[-1]
+        sma50  = current['SMA_50'] if 'SMA_50' in current else fast_window['close'].rolling(50).mean().iloc[-1]
+        sma200 = current['SMA_200'] if 'SMA_200' in current else fast_window['close'].rolling(200).mean().iloc[-1]
+        ema21  = current['EMA_21'] if 'EMA_21' in current else _ema(fast_window['close'], 21).iloc[-1]
 
         bullish_trend = (not pd.isna(sma200)) and sma50 > sma200 and current_price > ema21
         bearish_trend = (not pd.isna(sma200)) and sma50 < sma200 and current_price < ema21
         macro_trend   = "Bullish" if bullish_trend else "Bearish" if bearish_trend else "Unknown"
 
-        pivots   = self._find_liquidity_pivots(df)
-        fvgs     = self._identify_fvgs(df)
-        obs      = self._identify_order_blocks(df)
-        struct   = self._detect_market_structure(df)
-        sweep    = self._detect_liquidity_sweep(df)
-        pd_zone  = self._premium_discount_zone(df)
-        rsi_div  = self._detect_rsi_divergence(df)
-        vol_data = self._volume_delta_signal(df)
+        pivots   = self._find_liquidity_pivots(fast_window)
+        active_fvgs = self._query_active_fvgs(fvg_catalog, df, i)
+        active_obs  = self._query_active_obs(ob_catalog, df, i)
+        last_struct = self._query_last_structure(structure, i)
+        
+        # Convert last_struct to the old format for confidence scorer
+        struct_event = {"event": "Neutral", "direction": "unknown"}
+        if last_struct:
+            if "BULL" in last_struct['type']:
+                struct_event = {"event": last_struct['type'], "direction": "bullish", "broken_level": last_struct['level']}
+            else:
+                struct_event = {"event": last_struct['type'], "direction": "bearish", "broken_level": last_struct['level']}
 
-        # FIX: Use the new price_inside flag instead of mitigated check
+        sweep    = self._detect_liquidity_sweep(fast_window)
+        pd_zone  = self._premium_discount_zone(fast_window)
+        rsi_div  = self._detect_rsi_divergence(fast_window)
+        vol_data = self._volume_delta_signal(fast_window)
+
         fvg_hit = any(
-            f.get("price_inside", False) and not f.get("mitigated", False)
-            for f in fvgs
+            (f['type'] == 'BULL' and f['top'] >= current_price >= f['bottom']) or
+            (f['type'] == 'BEAR' and f['bottom'] <= current_price <= f['top'])
+            for f in active_fvgs
         )
+        
         ob_hit = any(
-            ob['zone'][0] <= current_price <= ob['zone'][1] and not ob.get("mitigated", False)
-            for ob in obs
+            ob['low'] <= current_price <= ob['high']
+            for ob in active_obs
         )
 
         try:
@@ -577,7 +596,7 @@ class StrategyAgent:
 
         factors = {
             "trend":           macro_trend,
-            "structure_event": struct.get("event", ""),
+            "structure_event": struct_event.get("event", ""),
             "fvg_hit":         fvg_hit,
             "ob_hit":          ob_hit,
             "sweep":           sweep.get("sweep_detected", False),
@@ -610,13 +629,13 @@ class StrategyAgent:
             "Is_Swing_Trade":       is_swing_trade,
             "Macro_Unrest_Score":   unrest_score,
             "Macro_Trend":          macro_trend,
-            "Market_Structure":     struct,
+            "Market_Structure":     struct_event,
             "Liquidity_Sweep":      sweep,
             "Premium_Discount":     pd_zone,
             "RSI_Divergence":       rsi_div,
             "Volume_Delta":         vol_data,
             "Liquidity_Zones":      pivots,
-            "Recent_FVGs":          fvgs,
-            "Order_Blocks":         obs,
+            "Recent_FVGs":          active_fvgs[:5],
+            "Order_Blocks":         active_obs[:4],
             "Session_Valid":        session_ok,
         }

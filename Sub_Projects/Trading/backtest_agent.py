@@ -279,6 +279,11 @@ class BacktestAgent:
 
         df['atr'] = _wilder_atr(df, 14)
         df = self._attach_indicators(df)
+        
+        # Build SMC pattern catalogs once on the full dataframe
+        fvg_catalog = self.strategy._build_fvg_catalog(df)
+        ob_catalog  = self.strategy._build_ob_catalog(df)
+        structure   = self.strategy._build_structure(df)
 
         # ── Find where the actual test window starts ──
         test_start_cutoff = df['time'].iloc[-1] - pd.Timedelta(days=days)
@@ -304,13 +309,9 @@ class BacktestAgent:
                        "B+": {"w": 0, "l": 0}}
 
         for i in range(signal_start, len(df) - lookahead):
-            # Slice 200 candles for SMC pattern detection (FVG/OB/sweep/structure)
-            # Pre-calculated indicators (SMA_50, SMA_200, EMA_21, rsi_14) are on
-            # the slice because they were attached to the full df before slicing.
-            window = df.iloc[max(0, i-200):i].copy()
             future = df.iloc[i: i + lookahead].copy()
 
-            context    = self.strategy.analyze_market_context(ticker, window)
+            context    = self.strategy.analyze_market_context(ticker, df, i-1, fvg_catalog, ob_catalog, structure)
             if "error" in context:
                 continue
 
@@ -337,8 +338,8 @@ class BacktestAgent:
                 continue
 
             total += 1
-            entry = window['close'].iloc[-1]
-            atr   = window['atr'].iloc[-1]
+            entry = df.iloc[i-1]['close']
+            atr   = df.iloc[i-1]['atr']
             if pd.isna(atr) or atr == 0:
                 continue
 
