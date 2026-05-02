@@ -288,7 +288,7 @@ class BacktestAgent:
                        "B+": {"w": 0, "l": 0}}
 
         for i in range(signal_start, len(df) - lookahead):
-            window = df.iloc[:i].copy()
+            window = df.iloc[max(0, i-250):i].copy().reset_index(drop=True)
             future = df.iloc[i: i + lookahead].copy()
 
             context    = self.strategy.analyze_market_context(ticker, window)

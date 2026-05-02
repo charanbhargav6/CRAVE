@@ -8,20 +8,20 @@
     "Min_Confidence": "40%",
     "Risk_Per_Trade": "2.0%",
     "SL_Multiplier": "1.5\u00d7 ATR",
-    "Candles_Total": 2155,
-    "Candles_Test_Window": 721,
-    "Signals": 115,
-    "Skipped_Unknown_Trend": 324,
-    "Wins": 59,
-    "Losses": 52,
-    "Win_Rate": "51.3%",
-    "Expectancy_R": "0.149R per trade",
+    "Candles_Total": 2154,
+    "Candles_Test_Window": 720,
+    "Signals": 113,
+    "Skipped_Unknown_Trend": 327,
+    "Wins": 55,
+    "Losses": 54,
+    "Win_Rate": "48.7%",
+    "Expectancy_R": "0.078R per trade",
     "Best_Trade_R": "+1.5R",
     "Worst_Trade_R": "-1.0R",
-    "Total_Return": "35.16%",
+    "Total_Return": "15.33%",
     "Max_Drawdown": "-30.78%",
-    "Profit_Factor": "1.32",
-    "Sharpe_Ratio": "2.08",
+    "Profit_Factor": "1.16",
+    "Sharpe_Ratio": "1.10",
     "Grade_Breakdown": {
       "A+": {
         "trades": 1,
@@ -34,12 +34,12 @@
         "expectancy_r": -0.29
       },
       "B+": {
-        "trades": 93,
-        "win_rate": "57.0%",
-        "expectancy_r": 0.24
+        "trades": 91,
+        "win_rate": "53.8%",
+        "expectancy_r": 0.16
       }
     },
-    "Verdict": "\u26a0\ufe0f MARGINAL \u2014 Edge is thin. Raise min_confidence to 55+."
+    "Verdict": "\u26a0\ufe0f WEAK \u2014 Positive but unreliable. Do not trade live yet."
   },
   "ETHUSD": {
     "Symbol": "ETHUSD",
@@ -50,20 +50,20 @@
     "Min_Confidence": "40%",
     "Risk_Per_Trade": "2.0%",
     "SL_Multiplier": "1.5\u00d7 ATR",
-    "Candles_Total": 2156,
-    "Candles_Test_Window": 721,
-    "Signals": 107,
-    "Skipped_Unknown_Trend": 394,
+    "Candles_Total": 2154,
+    "Candles_Test_Window": 720,
+    "Signals": 109,
+    "Skipped_Unknown_Trend": 399,
     "Wins": 38,
-    "Losses": 63,
-    "Win_Rate": "35.5%",
-    "Expectancy_R": "-0.208R per trade",
+    "Losses": 65,
+    "Win_Rate": "34.9%",
+    "Expectancy_R": "-0.223R per trade",
     "Best_Trade_R": "+1.5R",
     "Worst_Trade_R": "-1.0R",
-    "Total_Return": "-35.83%",
-    "Max_Drawdown": "-42.39%",
-    "Profit_Factor": "0.67",
-    "Sharpe_Ratio": "-3.10",
+    "Total_Return": "-38.37%",
+    "Max_Drawdown": "-45.78%",
+    "Profit_Factor": "0.65",
+    "Sharpe_Ratio": "-3.35",
     "Grade_Breakdown": {
       "A+": {
         "trades": 1,
@@ -76,9 +76,9 @@
         "expectancy_r": -0.42
       },
       "B+": {
-        "trades": 82,
-        "win_rate": "39.0%",
-        "expectancy_r": -0.18
+        "trades": 84,
+        "win_rate": "38.1%",
+        "expectancy_r": -0.2
       }
     },
     "Verdict": "\u274c REJECTED \u2014 Negative expectancy. Do NOT trade live."
@@ -92,20 +92,20 @@
     "Min_Confidence": "40%",
     "Risk_Per_Trade": "2.0%",
     "SL_Multiplier": "1.5\u00d7 ATR",
-    "Candles_Total": 2156,
-    "Candles_Test_Window": 721,
-    "Signals": 138,
+    "Candles_Total": 2154,
+    "Candles_Test_Window": 720,
+    "Signals": 139,
     "Skipped_Unknown_Trend": 363,
     "Wins": 50,
-    "Losses": 87,
-    "Win_Rate": "36.2%",
-    "Expectancy_R": "-0.212R per trade",
+    "Losses": 88,
+    "Win_Rate": "36.0%",
+    "Expectancy_R": "-0.217R per trade",
     "Best_Trade_R": "+1.5R",
     "Worst_Trade_R": "-1.0R",
-    "Total_Return": "-45.83%",
-    "Max_Drawdown": "-50.91%",
-    "Profit_Factor": "0.67",
-    "Sharpe_Ratio": "-3.12",
+    "Total_Return": "-46.91%",
+    "Max_Drawdown": "-51.90%",
+    "Profit_Factor": "0.66",
+    "Sharpe_Ratio": "-3.21",
     "Grade_Breakdown": {
       "A+": {
         "trades": 1,
@@ -118,9 +118,9 @@
         "expectancy_r": -0.02
       },
       "B+": {
-        "trades": 114,
-        "win_rate": "36.0%",
-        "expectancy_r": -0.24
+        "trades": 115,
+        "win_rate": "35.7%",
+        "expectancy_r": -0.25
       }
     },
     "Verdict": "\u274c REJECTED \u2014 Negative expectancy. Do NOT trade live."
@@ -134,20 +134,20 @@
     "Min_Confidence": "40%",
     "Risk_Per_Trade": "2.0%",
     "SL_Multiplier": "2.0\u00d7 ATR",
-    "Candles_Total": 1420,
+    "Candles_Total": 1424,
     "Candles_Test_Window": 478,
-    "Signals": 105,
-    "Skipped_Unknown_Trend": 199,
+    "Signals": 103,
+    "Skipped_Unknown_Trend": 203,
     "Wins": 52,
-    "Losses": 39,
-    "Win_Rate": "49.5%",
-    "Expectancy_R": "0.176R per trade",
+    "Losses": 37,
+    "Win_Rate": "50.5%",
+    "Expectancy_R": "0.202R per trade",
     "Best_Trade_R": "+1.5R",
     "Worst_Trade_R": "-1.0R",
-    "Total_Return": "34.74%",
-    "Max_Drawdown": "-27.90%",
-    "Profit_Factor": "1.41",
-    "Sharpe_Ratio": "2.57",
+    "Total_Return": "40.29%",
+    "Max_Drawdown": "-26.90%",
+    "Profit_Factor": "1.49",
+    "Sharpe_Ratio": "2.96",
     "Grade_Breakdown": {
       "A+": {
         "trades": 3,
@@ -160,12 +160,12 @@
         "expectancy_r": 0.38
       },
       "B+": {
-        "trades": 84,
-        "win_rate": "54.8%",
-        "expectancy_r": 0.14
+        "trades": 82,
+        "win_rate": "56.1%",
+        "expectancy_r": 0.17
       }
     },
-    "Verdict": "\u26a0\ufe0f WEAK \u2014 Positive but unreliable. Do not trade live yet.",
+    "Verdict": "\u26a0\ufe0f MARGINAL \u2014 Edge is thin. Raise min_confidence to 55+.",
     "Warning": "Gold needs 60+ days for a valid backtest (you passed 30). Results may be unreliable. Rerun with days=60 or higher."
   },
   "EURUSD": {
@@ -177,20 +177,20 @@
     "Min_Confidence": "40%",
     "Risk_Per_Trade": "2.0%",
     "SL_Multiplier": "2.5\u00d7 ATR",
-    "Candles_Total": 1518,
+    "Candles_Total": 1523,
     "Candles_Test_Window": 523,
-    "Signals": 131,
-    "Skipped_Unknown_Trend": 219,
-    "Wins": 65,
+    "Signals": 130,
+    "Skipped_Unknown_Trend": 220,
+    "Wins": 64,
     "Losses": 41,
-    "Win_Rate": "49.6%",
-    "Expectancy_R": "0.137R per trade",
+    "Win_Rate": "49.2%",
+    "Expectancy_R": "0.133R per trade",
     "Best_Trade_R": "+1.5R",
     "Worst_Trade_R": "-1.0R",
-    "Total_Return": "30.93%",
+    "Total_Return": "29.63%",
     "Max_Drawdown": "-23.10%",
-    "Profit_Factor": "1.35",
-    "Sharpe_Ratio": "2.22",
+    "Profit_Factor": "1.34",
+    "Sharpe_Ratio": "2.16",
     "Grade_Breakdown": {
       "A": {
         "trades": 9,
@@ -198,9 +198,9 @@
         "expectancy_r": -0.28
       },
       "B+": {
-        "trades": 97,
-        "win_rate": "63.9%",
-        "expectancy_r": 0.18
+        "trades": 96,
+        "win_rate": "63.5%",
+        "expectancy_r": 0.17
       }
     },
     "Verdict": "\u26a0\ufe0f WEAK \u2014 Positive but unreliable. Do not trade live yet.",
@@ -215,10 +215,10 @@
     "Min_Confidence": "40%",
     "Risk_Per_Trade": "2.0%",
     "SL_Multiplier": "2.5\u00d7 ATR",
-    "Candles_Total": 1518,
+    "Candles_Total": 1523,
     "Candles_Test_Window": 523,
     "Signals": 98,
-    "Skipped_Unknown_Trend": 240,
+    "Skipped_Unknown_Trend": 236,
     "Wins": 22,
     "Losses": 52,
     "Win_Rate": "22.4%",
@@ -258,20 +258,20 @@
     "Min_Confidence": "40%",
     "Risk_Per_Trade": "2.0%",
     "SL_Multiplier": "2.5\u00d7 ATR",
-    "Candles_Total": 1509,
+    "Candles_Total": 1513,
     "Candles_Test_Window": 519,
-    "Signals": 72,
-    "Skipped_Unknown_Trend": 288,
+    "Signals": 70,
+    "Skipped_Unknown_Trend": 286,
     "Wins": 10,
-    "Losses": 33,
-    "Win_Rate": "13.9%",
-    "Expectancy_R": "-0.628R per trade",
+    "Losses": 31,
+    "Win_Rate": "14.3%",
+    "Expectancy_R": "-0.610R per trade",
     "Best_Trade_R": "+1.5R",
     "Worst_Trade_R": "-1.0R",
-    "Total_Return": "-42.17%",
-    "Max_Drawdown": "-44.39%",
-    "Profit_Factor": "0.18",
-    "Sharpe_Ratio": "-14.42",
+    "Total_Return": "-39.78%",
+    "Max_Drawdown": "-43.24%",
+    "Profit_Factor": "0.19",
+    "Sharpe_Ratio": "-13.77",
     "Grade_Breakdown": {
       "A": {
         "trades": 6,
@@ -279,9 +279,9 @@
         "expectancy_r": -1.0
       },
       "B+": {
-        "trades": 37,
-        "win_rate": "27.0%",
-        "expectancy_r": -0.57
+        "trades": 35,
+        "win_rate": "28.6%",
+        "expectancy_r": -0.54
       }
     },
     "Verdict": "\u274c REJECTED \u2014 Negative expectancy. Do NOT trade live.",
@@ -296,20 +296,20 @@
     "Min_Confidence": "40%",
     "Risk_Per_Trade": "2.0%",
     "SL_Multiplier": "2.5\u00d7 ATR",
-    "Candles_Total": 1521,
+    "Candles_Total": 1526,
     "Candles_Test_Window": 523,
-    "Signals": 107,
-    "Skipped_Unknown_Trend": 241,
-    "Wins": 42,
+    "Signals": 105,
+    "Skipped_Unknown_Trend": 243,
+    "Wins": 40,
     "Losses": 54,
-    "Win_Rate": "39.3%",
-    "Expectancy_R": "-0.146R per trade",
+    "Win_Rate": "38.1%",
+    "Expectancy_R": "-0.160R per trade",
     "Best_Trade_R": "+1.5R",
     "Worst_Trade_R": "-1.0R",
-    "Total_Return": "-25.95%",
+    "Total_Return": "-27.41%",
     "Max_Drawdown": "-53.59%",
-    "Profit_Factor": "0.74",
-    "Sharpe_Ratio": "-2.26",
+    "Profit_Factor": "0.72",
+    "Sharpe_Ratio": "-2.46",
     "Grade_Breakdown": {
       "A+": {
         "trades": 1,
@@ -322,9 +322,9 @@
         "expectancy_r": -1.0
       },
       "B+": {
-        "trades": 93,
-        "win_rate": "44.1%",
-        "expectancy_r": -0.15
+        "trades": 91,
+        "win_rate": "42.9%",
+        "expectancy_r": -0.16
       }
     },
     "Verdict": "\u274c REJECTED \u2014 Negative expectancy. Do NOT trade live.",
@@ -332,15 +332,15 @@
   },
   "_portfolio": {
     "starting_equity": 10000.0,
-    "final_equity": 2073.42,
-    "total_return_pct": -79.27,
-    "total_trades": 759,
-    "wins": 338,
-    "losses": 421,
-    "win_rate": 44.5,
-    "expectancy_r": -0.092,
-    "max_drawdown_pct": 87.83,
-    "profit_factor": 0.83,
+    "final_equity": 1752.27,
+    "total_return_pct": -82.48,
+    "total_trades": 753,
+    "wins": 331,
+    "losses": 422,
+    "win_rate": 44.0,
+    "expectancy_r": -0.104,
+    "max_drawdown_pct": 88.42,
+    "profit_factor": 0.81,
     "best_r": 1.5,
     "worst_r": -1.0
   }
