@@ -126,6 +126,7 @@ ASSET_PARAMS = {
     "gold":    {"sl_mult": 2.0, "rr": 2.0, "min_days": 60,  "label": "Gold",    "min_grade": "A",  "min_conf": 50},
     "silver":  {"sl_mult": 2.0, "rr": 2.0, "min_days": 60,  "label": "Silver",  "min_grade": "A",  "min_conf": 50},
     "forex":   {"sl_mult": 2.5, "rr": 3.0, "min_days": 90,  "label": "Forex",   "min_grade": "A+", "min_conf": 65},
+    "btc":     {"sl_mult": 1.5, "rr": 2.0, "min_days": 30,  "label": "BTC",     "min_grade": "B+", "min_conf": 40},
     "crypto":  {"sl_mult": 1.5, "rr": 2.0, "min_days": 30,  "label": "Crypto",  "min_grade": "A",  "min_conf": 45},
     "stocks":  {"sl_mult": 1.8, "rr": 2.5, "min_days": 60,  "label": "Stocks",  "min_grade": "A",  "min_conf": 55},
     "indices": {"sl_mult": 1.8, "rr": 2.5, "min_days": 60,  "label": "Indices", "min_grade": "A",  "min_conf": 55},
@@ -147,6 +148,7 @@ def get_asset_params(ticker: str) -> dict:
     if t in GOLD_TICKERS:     return ASSET_PARAMS["gold"]
     if t in SILVER_TICKERS:   return ASSET_PARAMS["silver"]
     if t in FOREX_PAIRS:      return ASSET_PARAMS["forex"]
+    if t in ["BTC-USD", "BTC"]: return ASSET_PARAMS["btc"]
     if t in CRYPTO_TICKERS:   return ASSET_PARAMS["crypto"]
     if t in INDEX_TICKERS:    return ASSET_PARAMS["indices"]
     if t in US_STOCK_TICKERS: return ASSET_PARAMS["stocks"]

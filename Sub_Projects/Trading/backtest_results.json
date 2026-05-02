@@ -1,7 +1,7 @@
 {
   "BTCUSD": {
     "Symbol": "BTCUSD",
-    "Asset_Class": "Crypto",
+    "Asset_Class": "BTC",
     "Strategy": "SMC v9.3 (OB+FVG+CHoCH+Volume)",
     "Period": "30 Days",
     "Interval": "1h",
@@ -10,18 +10,18 @@
     "SL_Multiplier": "1.5\u00d7 ATR",
     "Candles_Total": 2155,
     "Candles_Test_Window": 721,
-    "Signals": 10,
+    "Signals": 130,
     "Skipped_Unknown_Trend": 330,
-    "Wins": 7,
-    "Losses": 3,
-    "Win_Rate": "70.0%",
-    "Expectancy_R": "0.450R per trade",
+    "Wins": 72,
+    "Losses": 53,
+    "Win_Rate": "55.4%",
+    "Expectancy_R": "0.216R per trade",
     "Best_Trade_R": "+1.5R",
     "Worst_Trade_R": "-1.0R",
-    "Total_Return": "9.14%",
-    "Max_Drawdown": "-2.00%",
-    "Profit_Factor": "2.50",
-    "Sharpe_Ratio": "6.90",
+    "Total_Return": "66.27%",
+    "Max_Drawdown": "-19.46%",
+    "Profit_Factor": "1.51",
+    "Sharpe_Ratio": "3.10",
     "Grade_Breakdown": {
       "A+": {
         "trades": 4,
@@ -32,9 +32,14 @@
         "trades": 6,
         "win_rate": "83.3%",
         "expectancy_r": 0.58
+      },
+      "B+": {
+        "trades": 115,
+        "win_rate": "56.5%",
+        "expectancy_r": 0.2
       }
     },
-    "Verdict": "\u2705 EXCELLENT \u2014 Deploy to paper immediately. Go live in 2 weeks."
+    "Verdict": "\u26a0\ufe0f MARGINAL \u2014 Edge is thin. Raise min_confidence to 55+."
   },
   "ETHUSD": {
     "Symbol": "ETHUSD",
@@ -324,7 +329,7 @@
     "Min_Confidence": "40%",
     "Risk_Per_Trade": "2.0%",
     "SL_Multiplier": "1.8\u00d7 ATR",
-    "Candles_Total": 533,
+    "Candles_Total": 532,
     "Candles_Test_Window": 268,
     "Signals": 4,
     "Skipped_Unknown_Trend": 101,
@@ -356,7 +361,7 @@
     "Min_Confidence": "40%",
     "Risk_Per_Trade": "2.0%",
     "SL_Multiplier": "1.8\u00d7 ATR",
-    "Candles_Total": 535,
+    "Candles_Total": 534,
     "Candles_Test_Window": 269,
     "Signals": 32,
     "Skipped_Unknown_Trend": 138,
@@ -388,7 +393,7 @@
     "Min_Confidence": "40%",
     "Risk_Per_Trade": "2.0%",
     "SL_Multiplier": "1.8\u00d7 ATR",
-    "Candles_Total": 536,
+    "Candles_Total": 535,
     "Candles_Test_Window": 269,
     "Signals": 37,
     "Skipped_Unknown_Trend": 105,
@@ -418,15 +423,15 @@
   },
   "_portfolio": {
     "starting_equity": 10000.0,
-    "final_equity": 24529.05,
-    "total_return_pct": 145.29,
-    "total_trades": 263,
-    "wins": 165,
-    "losses": 98,
-    "win_rate": 62.7,
-    "expectancy_r": 0.181,
+    "final_equity": 37368.69,
+    "total_return_pct": 273.69,
+    "total_trades": 378,
+    "wins": 230,
+    "losses": 148,
+    "win_rate": 60.8,
+    "expectancy_r": 0.185,
     "max_drawdown_pct": 24.18,
-    "profit_factor": 1.48,
+    "profit_factor": 1.47,
     "best_r": 1.5,
     "worst_r": -1.0
   }
