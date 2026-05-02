@@ -26,15 +26,23 @@ import schedule
 from pathlib import Path
 from datetime import datetime, timezone
 
-# ── Load .env ─────────────────────────────────────────────────────────────────
-try:
-    from dotenv import load_dotenv
-    load_dotenv(Path(__file__).parent / ".env")
-except ImportError:
-    print("Run: pip install python-dotenv")
-
+# ── Load secrets: DPAPI Vault first, then .env fallback ──────────────────────
 sys.path.insert(0, str(Path(__file__).parent))
 sys.path.insert(0, str(Path(__file__).parent / "Sub_Projects" / "Trading"))
+
+_vault_loaded = False
+try:
+    from src.security.encryption import crypto_manager
+    _vault_loaded = crypto_manager.decrypt_env_to_memory()
+except Exception as _ve:
+    pass
+
+if not _vault_loaded:
+    try:
+        from dotenv import load_dotenv
+        load_dotenv(Path(__file__).parent / ".env")
+    except ImportError:
+        print("Run: pip install python-dotenv")
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 from Config.config import LOGGING as LOG_CFG, LOGS_DIR

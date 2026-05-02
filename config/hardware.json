@@ -17,8 +17,8 @@
     }
   },
   "models": {
-    "primary": "qwen2.5:14b",
-    "reasoning": "deepseek-r1:14b",
+    "primary": "qwen2.5:7b",
+    "reasoning": "deepseek-r1:7b",
     "vision": "llama3.2-vision:11b"
   },
   "whisper": {
