@@ -216,6 +216,21 @@ class BacktestAgent:
     # CORE BACKTEST ENGINE
     # ─────────────────────────────────────────────────────────────────────────
 
+    def _attach_indicators(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Pre-calculate all path-dependent indicators on the FULL dataframe."""
+        # EMAs
+        df['EMA_21']  = df['close'].ewm(span=21,  adjust=False).mean()
+        df['SMA_50']  = df['close'].rolling(50).mean()
+        df['SMA_200'] = df['close'].rolling(200).mean()
+
+        # RSI (using the original Cutler's RSI formula with rolling mean to match old strategy)
+        delta = df['close'].diff()
+        gain  = delta.clip(lower=0).rolling(14).mean()
+        loss  = (-delta.clip(upper=0)).rolling(14).mean()
+        df['rsi_14'] = 100 - (100 / (1 + gain / loss.replace(0, np.nan)))
+
+        return df
+
     def run_backtest(self, symbol: str, days: int = 30, timeframe: str = "1h",
                      min_confidence: int = 40,
                      risk_per_trade: float = DEFAULT_RISK_PER_TRADE) -> dict:
@@ -259,23 +274,24 @@ class BacktestAgent:
             warmup_extra_days=warmup_extra_days
         )
 
-        if df is None or len(df) < 100:
+        if df is None or len(df) < 250:
             return {"error": f"Not enough data for {display_name(ticker)}."}
 
         df['atr'] = _wilder_atr(df, 14)
+        df = self._attach_indicators(df)
 
         # ── Find where the actual test window starts ──
         test_start_cutoff = df['time'].iloc[-1] - pd.Timedelta(days=days)
         test_start_idx    = df[df['time'] >= test_start_cutoff].index[0]
 
-        # Require 200+ candles before any signal so SMA200 is valid
+        # Require 200+ candles before any signal so SMA200 is completely stable
         signal_start = max(test_start_idx, 200)
 
         logger.info(
             f"[Backtest] Total candles: {len(df)} | "
             f"Test window starts at candle {test_start_idx} | "
             f"First signal at candle {signal_start} "
-            f"(SMA200 valid from candle 200)"
+            f"(Indicators perfectly warmed up)"
         )
 
         lookahead     = 20
@@ -288,7 +304,10 @@ class BacktestAgent:
                        "B+": {"w": 0, "l": 0}}
 
         for i in range(signal_start, len(df) - lookahead):
-            window = df.iloc[max(0, i-250):i].copy().reset_index(drop=True)
+            # Slice 200 candles for SMC pattern detection (FVG/OB/sweep/structure)
+            # Pre-calculated indicators (SMA_50, SMA_200, EMA_21, rsi_14) are on
+            # the slice because they were attached to the full df before slicing.
+            window = df.iloc[max(0, i-200):i].copy()
             future = df.iloc[i: i + lookahead].copy()
 
             context    = self.strategy.analyze_market_context(ticker, window)

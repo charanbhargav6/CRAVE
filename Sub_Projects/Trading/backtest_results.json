@@ -8,20 +8,20 @@
     "Min_Confidence": "40%",
     "Risk_Per_Trade": "2.0%",
     "SL_Multiplier": "1.5\u00d7 ATR",
-    "Candles_Total": 2154,
-    "Candles_Test_Window": 720,
-    "Signals": 113,
-    "Skipped_Unknown_Trend": 327,
-    "Wins": 55,
+    "Candles_Total": 2155,
+    "Candles_Test_Window": 721,
+    "Signals": 112,
+    "Skipped_Unknown_Trend": 329,
+    "Wins": 54,
     "Losses": 54,
-    "Win_Rate": "48.7%",
-    "Expectancy_R": "0.078R per trade",
+    "Win_Rate": "48.2%",
+    "Expectancy_R": "0.065R per trade",
     "Best_Trade_R": "+1.5R",
     "Worst_Trade_R": "-1.0R",
-    "Total_Return": "15.33%",
+    "Total_Return": "11.97%",
     "Max_Drawdown": "-30.78%",
-    "Profit_Factor": "1.16",
-    "Sharpe_Ratio": "1.10",
+    "Profit_Factor": "1.13",
+    "Sharpe_Ratio": "0.92",
     "Grade_Breakdown": {
       "A+": {
         "trades": 1,
@@ -34,9 +34,9 @@
         "expectancy_r": -0.29
       },
       "B+": {
-        "trades": 91,
-        "win_rate": "53.8%",
-        "expectancy_r": 0.16
+        "trades": 90,
+        "win_rate": "53.3%",
+        "expectancy_r": 0.14
       }
     },
     "Verdict": "\u26a0\ufe0f WEAK \u2014 Positive but unreliable. Do not trade live yet."
@@ -50,10 +50,10 @@
     "Min_Confidence": "40%",
     "Risk_Per_Trade": "2.0%",
     "SL_Multiplier": "1.5\u00d7 ATR",
-    "Candles_Total": 2154,
-    "Candles_Test_Window": 720,
+    "Candles_Total": 2155,
+    "Candles_Test_Window": 721,
     "Signals": 109,
-    "Skipped_Unknown_Trend": 399,
+    "Skipped_Unknown_Trend": 400,
     "Wins": 38,
     "Losses": 65,
     "Win_Rate": "34.9%",
@@ -92,10 +92,10 @@
     "Min_Confidence": "40%",
     "Risk_Per_Trade": "2.0%",
     "SL_Multiplier": "1.5\u00d7 ATR",
-    "Candles_Total": 2154,
-    "Candles_Test_Window": 720,
+    "Candles_Total": 2155,
+    "Candles_Test_Window": 721,
     "Signals": 139,
-    "Skipped_Unknown_Trend": 363,
+    "Skipped_Unknown_Trend": 365,
     "Wins": 50,
     "Losses": 88,
     "Win_Rate": "36.0%",
@@ -207,140 +207,25 @@
     "Warning": "Forex needs 90+ days for a valid backtest (you passed 30). Results may be unreliable. Rerun with days=90 or higher."
   },
   "GBPUSD": {
-    "Symbol": "GBPUSD",
-    "Asset_Class": "Forex",
-    "Strategy": "SMC v9.3 (OB+FVG+CHoCH+Volume)",
-    "Period": "30 Days",
-    "Interval": "1h",
-    "Min_Confidence": "40%",
-    "Risk_Per_Trade": "2.0%",
-    "SL_Multiplier": "2.5\u00d7 ATR",
-    "Candles_Total": 1523,
-    "Candles_Test_Window": 523,
-    "Signals": 98,
-    "Skipped_Unknown_Trend": 236,
-    "Wins": 22,
-    "Losses": 52,
-    "Win_Rate": "22.4%",
-    "Expectancy_R": "-0.351R per trade",
-    "Best_Trade_R": "+1.5R",
-    "Worst_Trade_R": "-1.0R",
-    "Total_Return": "-41.58%",
-    "Max_Drawdown": "-48.45%",
-    "Profit_Factor": "0.50",
-    "Sharpe_Ratio": "-5.42",
-    "Grade_Breakdown": {
-      "A+": {
-        "trades": 1,
-        "win_rate": "0.0%",
-        "expectancy_r": -1.0
-      },
-      "A": {
-        "trades": 7,
-        "win_rate": "0.0%",
-        "expectancy_r": -1.0
-      },
-      "B+": {
-        "trades": 66,
-        "win_rate": "33.3%",
-        "expectancy_r": -0.27
-      }
-    },
-    "Verdict": "\u274c REJECTED \u2014 Negative expectancy. Do NOT trade live.",
-    "Warning": "Forex needs 90+ days for a valid backtest (you passed 30). Results may be unreliable. Rerun with days=90 or higher."
+    "error": "Not enough data for GBPUSD."
   },
   "USDJPY": {
-    "Symbol": "USDJPY",
-    "Asset_Class": "Forex",
-    "Strategy": "SMC v9.3 (OB+FVG+CHoCH+Volume)",
-    "Period": "30 Days",
-    "Interval": "1h",
-    "Min_Confidence": "40%",
-    "Risk_Per_Trade": "2.0%",
-    "SL_Multiplier": "2.5\u00d7 ATR",
-    "Candles_Total": 1513,
-    "Candles_Test_Window": 519,
-    "Signals": 70,
-    "Skipped_Unknown_Trend": 286,
-    "Wins": 10,
-    "Losses": 31,
-    "Win_Rate": "14.3%",
-    "Expectancy_R": "-0.610R per trade",
-    "Best_Trade_R": "+1.5R",
-    "Worst_Trade_R": "-1.0R",
-    "Total_Return": "-39.78%",
-    "Max_Drawdown": "-43.24%",
-    "Profit_Factor": "0.19",
-    "Sharpe_Ratio": "-13.77",
-    "Grade_Breakdown": {
-      "A": {
-        "trades": 6,
-        "win_rate": "0.0%",
-        "expectancy_r": -1.0
-      },
-      "B+": {
-        "trades": 35,
-        "win_rate": "28.6%",
-        "expectancy_r": -0.54
-      }
-    },
-    "Verdict": "\u274c REJECTED \u2014 Negative expectancy. Do NOT trade live.",
-    "Warning": "Forex needs 90+ days for a valid backtest (you passed 30). Results may be unreliable. Rerun with days=90 or higher."
+    "error": "Not enough data for USDJPY."
   },
   "AUDUSD": {
-    "Symbol": "AUDUSD",
-    "Asset_Class": "Forex",
-    "Strategy": "SMC v9.3 (OB+FVG+CHoCH+Volume)",
-    "Period": "30 Days",
-    "Interval": "1h",
-    "Min_Confidence": "40%",
-    "Risk_Per_Trade": "2.0%",
-    "SL_Multiplier": "2.5\u00d7 ATR",
-    "Candles_Total": 1526,
-    "Candles_Test_Window": 523,
-    "Signals": 105,
-    "Skipped_Unknown_Trend": 243,
-    "Wins": 40,
-    "Losses": 54,
-    "Win_Rate": "38.1%",
-    "Expectancy_R": "-0.160R per trade",
-    "Best_Trade_R": "+1.5R",
-    "Worst_Trade_R": "-1.0R",
-    "Total_Return": "-27.41%",
-    "Max_Drawdown": "-53.59%",
-    "Profit_Factor": "0.72",
-    "Sharpe_Ratio": "-2.46",
-    "Grade_Breakdown": {
-      "A+": {
-        "trades": 1,
-        "win_rate": "100.0%",
-        "expectancy_r": 1.5
-      },
-      "A": {
-        "trades": 2,
-        "win_rate": "0.0%",
-        "expectancy_r": -1.0
-      },
-      "B+": {
-        "trades": 91,
-        "win_rate": "42.9%",
-        "expectancy_r": -0.16
-      }
-    },
-    "Verdict": "\u274c REJECTED \u2014 Negative expectancy. Do NOT trade live.",
-    "Warning": "Forex needs 90+ days for a valid backtest (you passed 30). Results may be unreliable. Rerun with days=90 or higher."
+    "error": "Not enough data for AUDUSD."
   },
   "_portfolio": {
     "starting_equity": 10000.0,
-    "final_equity": 1752.27,
-    "total_return_pct": -82.48,
-    "total_trades": 753,
-    "wins": 331,
-    "losses": 422,
-    "win_rate": 44.0,
-    "expectancy_r": -0.104,
-    "max_drawdown_pct": 88.42,
-    "profit_factor": 0.81,
+    "final_equity": 6661.88,
+    "total_return_pct": -33.38,
+    "total_trades": 543,
+    "wins": 258,
+    "losses": 285,
+    "win_rate": 47.5,
+    "expectancy_r": -0.026,
+    "max_drawdown_pct": 81.66,
+    "profit_factor": 0.95,
     "best_r": 1.5,
     "worst_r": -1.0
   }

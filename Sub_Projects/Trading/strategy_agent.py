@@ -75,13 +75,17 @@ def _find_swing_pivots(series: pd.Series, window: int = 5) -> list:
     Used by RSI divergence to avoid comparing arbitrary midpoints.
     Window=5 means price is the highest/lowest of the ±5 surrounding bars.
     """
-    pivots = []
-    vals   = series.values
-    for i in range(window, len(vals) - window):
-        neighborhood = vals[i - window: i + window + 1]
-        if vals[i] == neighborhood.max() or vals[i] == neighborhood.min():
-            pivots.append((i, vals[i]))
-    return pivots
+    if len(series) < window * 2 + 1:
+        return []
+    
+    # Vectorized pivot detection
+    is_high = series == series.rolling(window=window*2+1, center=True).max()
+    is_low  = series == series.rolling(window=window*2+1, center=True).min()
+    
+    is_pivot = is_high | is_low
+    pivot_idx = np.where(is_pivot)[0]
+    
+    return [(i, float(series.iloc[i])) for i in pivot_idx if window <= i < len(series) - window]
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -250,14 +254,16 @@ class StrategyAgent:
             return {"event": "Insufficient data", "direction": "unknown"}
 
         window = 5
-        highs  = []
-        lows   = []
 
-        for i in range(window, len(df) - window):
-            if df['high'].iloc[i] == df['high'].iloc[i - window: i + window + 1].max():
-                highs.append((i, df['high'].iloc[i]))
-            if df['low'].iloc[i] == df['low'].iloc[i - window: i + window + 1].min():
-                lows.append((i, df['low'].iloc[i]))
+        # Vectorized structure detection (lightning fast)
+        is_high = df['high'] == df['high'].rolling(window=window*2+1, center=True).max()
+        is_low  = df['low']  == df['low'].rolling(window=window*2+1, center=True).min()
+        
+        high_idx = np.where(is_high)[0]
+        low_idx  = np.where(is_low)[0]
+        
+        highs = [(i, float(df['high'].iloc[i])) for i in high_idx if window <= i < len(df) - window]
+        lows  = [(i, float(df['low'].iloc[i])) for i in low_idx  if window <= i < len(df) - window]
 
         if len(highs) < 2 or len(lows) < 2:
             return {"event": "Neutral", "direction": "unknown"}
@@ -267,14 +273,16 @@ class StrategyAgent:
         last_low  = lows[-1][1]
         prev_low  = lows[-2][1]
 
-        # FIX: Use the CLOSE of the most recent COMPLETED candle (iloc[-2], not iloc[-1])
-        # iloc[-1] may still be forming — using its close creates look-ahead on live feeds.
-        # Use iloc[-1] close only if your data guarantees it's a closed candle.
-        confirmed_close = df['close'].iloc[-1]  # Safe on historical; add feed check for live
+        confirmed_close = df['close'].iloc[-1]
 
-        sma50 = df['close'].rolling(50).mean().iloc[-1]
-        sma20 = df['close'].rolling(20).mean().iloc[-1]
-        in_uptrend = sma20 > sma50
+        # Use pre-calculated SMAs if available, otherwise compute
+        if 'SMA_50' in df.columns:
+            sma50 = df['SMA_50'].iloc[-1]
+            sma20 = df['close'].rolling(20).mean().iloc[-1]
+        else:
+            sma50 = df['close'].rolling(50).mean().iloc[-1]
+            sma20 = df['close'].rolling(20).mean().iloc[-1]
+        in_uptrend = (not pd.isna(sma50) and not pd.isna(sma20)) and sma20 > sma50
 
         # FIX: Check confirmed_close, not a raw tick price
         if confirmed_close > last_high:
@@ -353,7 +361,10 @@ class StrategyAgent:
         if len(df) < 40:
             return {"divergence": "none"}
 
-        rsi_series = _rsi(df['close'], 14)
+        if 'rsi_14' in df.columns:
+            rsi_series = df['rsi_14']
+        else:
+            rsi_series = _rsi(df['close'], 14)
 
         # ── Find swing HIGH pivots ──
         high_pivots = _find_swing_pivots(df['high'], window=5)
@@ -427,12 +438,11 @@ class StrategyAgent:
     # No changes.
 
     def _find_liquidity_pivots(self, df: pd.DataFrame, window: int = 5) -> dict:
-        df = df.copy()
-        df['pivot_high'] = df['high'] == df['high'].rolling(window=window * 2 + 1, center=True).max()
-        df['pivot_low']  = df['low']  == df['low'].rolling(window=window * 2 + 1, center=True).min()
+        pivot_high = df['high'] == df['high'].rolling(window=window * 2 + 1, center=True).max()
+        pivot_low  = df['low']  == df['low'].rolling(window=window * 2 + 1, center=True).min()
 
-        highs = df[df['pivot_high']]['high'].tail(5).tolist()
-        lows  = df[df['pivot_low']]['low'].tail(5).tolist()
+        highs = df.loc[pivot_high, 'high'].tail(5).tolist()
+        lows  = df.loc[pivot_low, 'low'].tail(5).tolist()
 
         return {
             "recent_resistances": [round(h, 5) for h in highs],
@@ -506,12 +516,15 @@ class StrategyAgent:
         if df is None or len(df) < 20:
             return {"error": "Insufficient data for analysis."}
 
-        df            = df.copy().reset_index(drop=True)
+        df            = df.copy()
         current_price = df['close'].iloc[-1]
 
-        df['SMA_50']  = df['close'].rolling(50).mean()
-        df['SMA_200'] = df['close'].rolling(200).mean()
-        df['EMA_21']  = _ema(df['close'], 21)
+        if 'SMA_50' not in df.columns:
+            df['SMA_50']  = df['close'].rolling(50).mean()
+        if 'SMA_200' not in df.columns:
+            df['SMA_200'] = df['close'].rolling(200).mean()
+        if 'EMA_21' not in df.columns:
+            df['EMA_21']  = _ema(df['close'], 21)
 
         sma50  = df['SMA_50'].iloc[-1]
         sma200 = df['SMA_200'].iloc[-1]
