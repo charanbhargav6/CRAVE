@@ -100,90 +100,77 @@ def _get_session_name(hour_utc: int) -> str:
 
 # ── MTF Confluence Gate ───────────────────────────────────────────────────────
 
-def check_mtf_confluence(symbol: str, direction: str,
-                           df_1h, df_4h) -> tuple:
+def check_mtf_confluence(symbol: str, direction: str, df_1h, df_4h) -> tuple:
     """
-    Multi-timeframe gate using 4H market structure (BOS/CHoCH).
-
-    Logic:
-      1. Detect swing highs/lows on 4H chart.
-      2. Check if the most recent confirmed close broke a swing level.
-      3. Buy signals require 4H bullish structure (BOS/CHoCH bullish).
-         Sell signals require 4H bearish structure.
-      4. Ranging 4H = fallback to EMA21 trend filter.
+    Multi-timeframe gate using 1H and 4H market structure (BOS/CHoCH).
+    Returns (is_approved: bool, grade_modifier: Optional[str], reason: str)
     """
     try:
         import pandas as pd
-        if df_4h is None or len(df_4h) < 20:
-            return True, "4H data unavailable - passing by default"
+        def _get_struct_dir(df, tf_name):
+            if df is None or len(df) < 20:
+                return "unknown", f"{tf_name} data unavailable"
+            
+            window = 3
+            highs, lows = [], []
+            for i in range(window, len(df) - window):
+                if df['high'].iloc[i] == df['high'].iloc[i - window: i + window + 1].max():
+                    highs.append((i, df['high'].iloc[i]))
+                if df['low'].iloc[i] == df['low'].iloc[i - window: i + window + 1].min():
+                    lows.append((i, df['low'].iloc[i]))
 
-        # ── Swing detection on 4H ──
-        window = 3
-        highs, lows = [], []
-        for i in range(window, len(df_4h) - window):
-            if df_4h['high'].iloc[i] == df_4h['high'].iloc[i - window: i + window + 1].max():
-                highs.append((i, df_4h['high'].iloc[i]))
-            if df_4h['low'].iloc[i] == df_4h['low'].iloc[i - window: i + window + 1].min():
-                lows.append((i, df_4h['low'].iloc[i]))
+            if len(highs) < 2 or len(lows) < 2:
+                # EMA21 fallback
+                close_p = df['close'].iloc[-1]
+                ema21 = df['close'].ewm(span=21, adjust=False).mean().iloc[-1]
+                above = close_p > ema21
+                d = "bullish" if above else "bearish"
+                return d, f"{tf_name} EMA21 {d}"
 
-        if len(highs) < 2 or len(lows) < 2:
-            # Not enough structure — fallback to EMA21
-            close_4h = df_4h['close'].iloc[-1]
-            ema21_4h = df_4h['close'].ewm(span=21, adjust=False).mean().iloc[-1]
-            above = close_4h > ema21_4h
-            if direction in ("buy", "long"):
-                return above, f"4H EMA21 fallback: {'above' if above else 'below'} ({ema21_4h:.5f})"
-            else:
-                return not above, f"4H EMA21 fallback: {'below' if not above else 'above'} ({ema21_4h:.5f})"
+            last_high = highs[-1][1]
+            prev_high = highs[-2][1]
+            last_low = lows[-1][1]
+            prev_low = lows[-2][1]
+            confirmed = df['close'].iloc[-1]
 
-        last_high  = highs[-1][1]
-        prev_high  = highs[-2][1]
-        last_low   = lows[-1][1]
-        prev_low   = lows[-2][1]
-        confirmed  = df_4h['close'].iloc[-1]
+            bullish_bos = confirmed > last_high
+            bearish_bos = confirmed < last_low
+            choch_bull = confirmed > last_high and prev_high > highs[-1][1]
+            choch_bear = confirmed < last_low and prev_low < lows[-1][1]
 
-        # ── Structure break detection ──
-        bullish_bos  = confirmed > last_high        # BOS bullish
-        bearish_bos  = confirmed < last_low          # BOS bearish
-        choch_bull   = confirmed > last_high and prev_high > highs[-1][1]  # CHoCH reversal up
-        choch_bear   = confirmed < last_low  and prev_low  < lows[-1][1]   # CHoCH reversal down
+            hh = last_high > prev_high
+            ll = last_low < prev_low
+            hl = last_low > prev_low
+            lh = last_high < prev_high
 
-        # Higher highs / lower lows trend
-        hh = last_high > prev_high  # higher high
-        ll = last_low  < prev_low   # lower low
-        hl = last_low  > prev_low   # higher low
-        lh = last_high < prev_high  # lower high
+            structure_bullish = bullish_bos or choch_bull or (hh and hl)
+            structure_bearish = bearish_bos or choch_bear or (ll and lh)
 
-        structure_bullish = bullish_bos or choch_bull or (hh and hl)
-        structure_bearish = bearish_bos or choch_bear or (ll and lh)
+            if structure_bullish and not structure_bearish: return "bullish", f"{tf_name} structure BULLISH"
+            if structure_bearish and not structure_bullish: return "bearish", f"{tf_name} structure BEARISH"
+            
+            # Ranging - fallback to EMA
+            ema21 = df['close'].ewm(span=21, adjust=False).mean().iloc[-1]
+            above = confirmed > ema21
+            d = "bullish" if above else "bearish"
+            return d, f"{tf_name} ranging, EMA21 {d}"
 
-        if direction in ("buy", "long"):
-            if structure_bullish:
-                reason = "4H BOS/CHoCH BULLISH"
-                if hh and hl:
-                    reason = "4H HH+HL structure BULLISH"
-                return True, reason
-            if structure_bearish:
-                return False, "4H structure BEARISH — conflicts with buy"
-            # Ranging — fallback to EMA21
-            ema21_4h = df_4h['close'].ewm(span=21, adjust=False).mean().iloc[-1]
-            above = confirmed > ema21_4h
-            return above, f"4H ranging, EMA21 fallback: {'bullish' if above else 'bearish'}"
-        else:
-            if structure_bearish:
-                reason = "4H BOS/CHoCH BEARISH"
-                if ll and lh:
-                    reason = "4H LL+LH structure BEARISH"
-                return True, reason
-            if structure_bullish:
-                return False, "4H structure BULLISH — conflicts with sell"
-            ema21_4h = df_4h['close'].ewm(span=21, adjust=False).mean().iloc[-1]
-            below = confirmed < ema21_4h
-            return below, f"4H ranging, EMA21 fallback: {'bearish' if below else 'bullish'}"
+        target_dir = "bullish" if direction in ("buy", "long") else "bearish"
+        
+        dir_1h, reason_1h = _get_struct_dir(df_1h, "1H")
+        dir_4h, reason_4h = _get_struct_dir(df_4h, "4H")
+
+        if dir_1h != "unknown" and dir_1h != target_dir:
+            return False, None, f"1H structure conflicts ({reason_1h})"
+            
+        if dir_4h != "unknown" and dir_4h != target_dir:
+            return True, "B", f"1H aligns but 4H conflicts ({reason_4h}) — downgraded to Grade B"
+            
+        return True, None, f"MTF aligns: {reason_1h} + {reason_4h}"
 
     except Exception as e:
         logger.debug(f"[Loop] MTF gate error: {e}")
-        return True, "MTF error - passing by default"
+        return True, None, "MTF error - passing by default"
 
 
 def _get_ohlcv_with_ws_fallback(symbol: str,
@@ -634,11 +621,16 @@ class TradingLoop:
             logger.info(f"[TradingLoop] {symbol}: SMC confidence {confidence}% below gate {min_conf}%")
             return None
 
-        mtf_ok, mtf_reason = check_mtf_confluence(symbol, direction, df_1h, df_4h)
+        mtf_ok, mtf_modifier, mtf_reason = check_mtf_confluence(symbol, direction, df_1h, df_4h)
         if not mtf_ok:
             self._log_signal(symbol, "skip", f"MTF conflict: {mtf_reason}",
                              confidence, grade_str, context, df_1h=df_15m)
             return None
+            
+        if mtf_modifier and grade in ("A+", "A", "B+"):
+            logger.info(f"[TradingLoop] {symbol}: Downgrading grade from {grade} to {mtf_modifier} due to MTF: {mtf_reason}")
+            grade = mtf_modifier
+            grade_str = f"Grade {grade}"
 
 
 

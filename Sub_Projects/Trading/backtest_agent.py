@@ -42,17 +42,29 @@ logger = logging.getLogger("crave.trading.backtest")
 DEFAULT_RISK_PER_TRADE = 0.02
 
 SYMBOL_ALIASES = {
+    # Forex
     "eurusd": "EURUSD=X", "gbpusd": "GBPUSD=X", "usdjpy": "USDJPY=X",
     "audusd": "AUDUSD=X", "usdcad": "USDCAD=X", "usdchf": "USDCHF=X",
     "nzdusd": "NZDUSD=X", "eurjpy": "EURJPY=X", "gbpjpy": "GBPJPY=X",
+    # Commodities
     "xauusd": "GC=F", "gold": "GC=F", "silver": "SI=F", "xagusd": "SI=F",
+    # Crypto
     "btcusd": "BTC-USD", "btc": "BTC-USD", "bitcoin": "BTC-USD",
     "ethusd": "ETH-USD", "eth": "ETH-USD",
     "solusd": "SOL-USD", "sol": "SOL-USD",
+    # US Stocks
     "aapl": "AAPL", "tsla": "TSLA", "msft": "MSFT", "nvda": "NVDA",
-    "spy": "SPY", "qqq": "QQQ",
+    "amzn": "AMZN", "meta": "META", "goog": "GOOGL",
+    # US Indices / ETFs (F&O proxies)
+    "spy": "SPY", "qqq": "QQQ", "spx": "^GSPC", "ndx": "^NDX",
+    # Indian Indices (F&O)
     "nifty": "^NSEI", "sensex": "^BSESN", "banknifty": "^NSEBANK",
+    # Indian Stocks (F&O eligible)
     "reliance": "RELIANCE.NS", "tcs": "TCS.NS", "infy": "INFY.NS",
+    "hdfcbank": "HDFCBANK.NS", "icicibank": "ICICIBANK.NS",
+    "sbin": "SBIN.NS", "tatamotors": "TATAMOTORS.NS",
+    "adanient": "ADANIENT.NS", "wipro": "WIPRO.NS",
+    "bajfinance": "BAJFINANCE.NS",
 }
 
 # Reverse map: Yahoo ticker -> user-friendly display name
@@ -63,6 +75,13 @@ DISPLAY_NAMES = {
     "NZDUSD=X": "NZDUSD", "EURJPY=X": "EURJPY", "GBPJPY=X": "GBPJPY",
     "BTC-USD": "BTCUSD", "ETH-USD": "ETHUSD", "SOL-USD": "SOLUSD",
     "DOGE-USD": "DOGEUSD", "XRP-USD": "XRPUSD",
+    "^NSEI": "NIFTY50", "^BSESN": "SENSEX", "^NSEBANK": "BANKNIFTY",
+    "^GSPC": "S&P500", "^NDX": "NASDAQ100",
+    "RELIANCE.NS": "RELIANCE", "TCS.NS": "TCS", "INFY.NS": "INFY",
+    "HDFCBANK.NS": "HDFCBANK", "ICICIBANK.NS": "ICICIBANK",
+    "SBIN.NS": "SBIN", "TATAMOTORS.NS": "TATAMOTORS",
+    "ADANIENT.NS": "ADANIENT", "WIPRO.NS": "WIPRO",
+    "BAJFINANCE.NS": "BAJFINANCE",
 }
 
 
@@ -102,13 +121,15 @@ def _wilder_atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
 # ASSET CLASS PARAMETERS
 # ─────────────────────────────────────────────────────────────────────────────
 ASSET_PARAMS = {
-    "gold":    {"sl_mult": 2.0, "rr": 2.0, "min_days": 60,  "label": "Gold"},
-    "silver":  {"sl_mult": 2.0, "rr": 2.0, "min_days": 60,  "label": "Silver"},
-    "forex":   {"sl_mult": 2.5, "rr": 2.0, "min_days": 90,  "label": "Forex"},
-    "crypto":  {"sl_mult": 1.5, "rr": 2.0, "min_days": 30,  "label": "Crypto"},
-    "stocks":  {"sl_mult": 1.5, "rr": 2.0, "min_days": 60,  "label": "Stocks"},
-    "indices": {"sl_mult": 1.5, "rr": 2.0, "min_days": 60,  "label": "Indices"},
-    "default": {"sl_mult": 1.5, "rr": 2.0, "min_days": 30,  "label": "Unknown"},
+    # min_grade: minimum allowed grade ("A+" = only A+, "A" = A+ and A, "B+" = A+/A/B+)
+    # min_conf:  minimum confidence % override (higher = fewer but better trades)
+    "gold":    {"sl_mult": 2.0, "rr": 2.0, "min_days": 60,  "label": "Gold",    "min_grade": "A",  "min_conf": 50},
+    "silver":  {"sl_mult": 2.0, "rr": 2.0, "min_days": 60,  "label": "Silver",  "min_grade": "A",  "min_conf": 50},
+    "forex":   {"sl_mult": 2.5, "rr": 3.0, "min_days": 90,  "label": "Forex",   "min_grade": "A+", "min_conf": 65},
+    "crypto":  {"sl_mult": 1.5, "rr": 2.0, "min_days": 30,  "label": "Crypto",  "min_grade": "A",  "min_conf": 45},
+    "stocks":  {"sl_mult": 1.8, "rr": 2.5, "min_days": 60,  "label": "Stocks",  "min_grade": "A",  "min_conf": 55},
+    "indices": {"sl_mult": 1.8, "rr": 2.5, "min_days": 60,  "label": "Indices", "min_grade": "A",  "min_conf": 55},
+    "default": {"sl_mult": 1.5, "rr": 2.0, "min_days": 30,  "label": "Unknown", "min_grade": "A",  "min_conf": 55},
 }
 
 FOREX_PAIRS    = {"EURUSD=X", "GBPUSD=X", "USDJPY=X", "AUDUSD=X", "USDCAD=X",
@@ -117,16 +138,18 @@ CRYPTO_TICKERS = {"BTC-USD", "ETH-USD", "SOL-USD", "DOGE-USD", "XRP-USD"}
 GOLD_TICKERS   = {"GC=F"}
 SILVER_TICKERS = {"SI=F"}
 INDEX_TICKERS  = {"^NSEI", "^BSESN", "^NSEBANK", "SPY", "QQQ", "^GSPC", "^NDX"}
+US_STOCK_TICKERS = {"AAPL", "TSLA", "MSFT", "NVDA", "AMZN", "META", "GOOGL", "AMD", "NFLX"}
 
 
 def get_asset_params(ticker: str) -> dict:
     """Return the correct ATR multipliers and minimum days for this asset class."""
     t = ticker.upper()
-    if t in GOLD_TICKERS:   return ASSET_PARAMS["gold"]
-    if t in SILVER_TICKERS: return ASSET_PARAMS["silver"]
-    if t in FOREX_PAIRS:    return ASSET_PARAMS["forex"]
-    if t in CRYPTO_TICKERS: return ASSET_PARAMS["crypto"]
-    if t in INDEX_TICKERS:  return ASSET_PARAMS["indices"]
+    if t in GOLD_TICKERS:     return ASSET_PARAMS["gold"]
+    if t in SILVER_TICKERS:   return ASSET_PARAMS["silver"]
+    if t in FOREX_PAIRS:      return ASSET_PARAMS["forex"]
+    if t in CRYPTO_TICKERS:   return ASSET_PARAMS["crypto"]
+    if t in INDEX_TICKERS:    return ASSET_PARAMS["indices"]
+    if t in US_STOCK_TICKERS: return ASSET_PARAMS["stocks"]
     if t.endswith(".NS") or t.endswith(".BO"): return ASSET_PARAMS["stocks"]
     return ASSET_PARAMS["default"]
 
@@ -326,7 +349,10 @@ class BacktestAgent:
 
             direction = "buy" if macro_trend == "Bullish" else "sell"
 
-            if confidence < min_confidence:
+            # ── Per-asset confidence and grade filtering ──
+            asset_min_conf = asset_p.get("min_conf", min_confidence)
+            effective_min_conf = max(min_confidence, asset_min_conf)
+            if confidence < effective_min_conf:
                 continue
 
             grade = None
@@ -335,6 +361,12 @@ class BacktestAgent:
                     grade = g
                     break
             if grade is None:
+                continue
+
+            # ── Per-asset grade gate ──
+            asset_min_grade = asset_p.get("min_grade", "B+")
+            allowed_grades = {"A+": ["A+"], "A": ["A+", "A"], "B+": ["A+", "A", "B+"]}
+            if grade not in allowed_grades.get(asset_min_grade, ["A+", "A", "B+"]):
                 continue
 
             total += 1

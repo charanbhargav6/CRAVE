@@ -25,14 +25,24 @@ STARTING_EQUITY = 10_000.0
 RISK_PER_TRADE  = 0.02
 
 INSTRUMENTS = [
+    # ── Crypto (A/A+ allowed, min_conf=45) ──
     ("BTCUSD",  30),
     ("ETHUSD",  30),
     ("SOLUSD",  30),
-    ("XAUUSD",  30),
+    # ── Commodities (A/A+ only, min_conf=50) ──
+    ("XAUUSD",  60),
+    # ── Forex (A+ only, min_conf=65, RR=3.0) ──
     ("EURUSD",  30),
     ("GBPUSD",  30),
-    ("USDJPY",  30),
     ("AUDUSD",  30),
+    # ── US Stocks (A/A+ only, min_conf=55) ──
+    ("NVDA",    60),
+    ("AMZN",    60),
+    # ── Indian F&O Indices ──
+    ("NIFTY",   60),
+    # ── Indian F&O Stocks ──
+    ("RELIANCE", 60),
+    ("TCS",     60),
 ]
 
 
@@ -219,7 +229,7 @@ tr:hover td{{background:#ffffff05}}
 <body>
 <div class="header">
   <h1>CRAVE BACKTEST DASHBOARD</h1>
-  <p>SMC v9.3 Strategy &bull; $10,000 Starting Equity &bull; 2% Risk Per Trade &bull; 9 Instruments</p>
+  <p>SMC v9.3 Strategy &bull; $10,000 Starting Equity &bull; 2% Risk Per Trade &bull; Crypto \u2022 Gold \u2022 Forex \u2022 US Stocks \u2022 Indian F&amp;O</p>
 </div>
 
 <div class="stats-grid">

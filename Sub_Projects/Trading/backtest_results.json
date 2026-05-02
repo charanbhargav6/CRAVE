@@ -8,20 +8,20 @@
     "Min_Confidence": "40%",
     "Risk_Per_Trade": "2.0%",
     "SL_Multiplier": "1.5\u00d7 ATR",
-    "Candles_Total": 2156,
+    "Candles_Total": 2155,
     "Candles_Test_Window": 721,
-    "Signals": 130,
+    "Signals": 10,
     "Skipped_Unknown_Trend": 330,
-    "Wins": 72,
-    "Losses": 53,
-    "Win_Rate": "55.4%",
-    "Expectancy_R": "0.216R per trade",
+    "Wins": 7,
+    "Losses": 3,
+    "Win_Rate": "70.0%",
+    "Expectancy_R": "0.450R per trade",
     "Best_Trade_R": "+1.5R",
     "Worst_Trade_R": "-1.0R",
-    "Total_Return": "66.27%",
-    "Max_Drawdown": "-19.46%",
-    "Profit_Factor": "1.51",
-    "Sharpe_Ratio": "3.10",
+    "Total_Return": "9.14%",
+    "Max_Drawdown": "-2.00%",
+    "Profit_Factor": "2.50",
+    "Sharpe_Ratio": "6.90",
     "Grade_Breakdown": {
       "A+": {
         "trades": 4,
@@ -32,14 +32,9 @@
         "trades": 6,
         "win_rate": "83.3%",
         "expectancy_r": 0.58
-      },
-      "B+": {
-        "trades": 115,
-        "win_rate": "56.5%",
-        "expectancy_r": 0.2
       }
     },
-    "Verdict": "\u26a0\ufe0f MARGINAL \u2014 Edge is thin. Raise min_confidence to 55+."
+    "Verdict": "\u2705 EXCELLENT \u2014 Deploy to paper immediately. Go live in 2 weeks."
   },
   "ETHUSD": {
     "Symbol": "ETHUSD",
@@ -50,20 +45,20 @@
     "Min_Confidence": "40%",
     "Risk_Per_Trade": "2.0%",
     "SL_Multiplier": "1.5\u00d7 ATR",
-    "Candles_Total": 2156,
+    "Candles_Total": 2155,
     "Candles_Test_Window": 721,
-    "Signals": 134,
+    "Signals": 9,
     "Skipped_Unknown_Trend": 400,
-    "Wins": 66,
-    "Losses": 62,
-    "Win_Rate": "49.3%",
-    "Expectancy_R": "0.000R per trade",
+    "Wins": 5,
+    "Losses": 3,
+    "Win_Rate": "55.6%",
+    "Expectancy_R": "0.312R per trade",
     "Best_Trade_R": "+1.5R",
     "Worst_Trade_R": "-1.0R",
-    "Total_Return": "-2.68%",
-    "Max_Drawdown": "-39.20%",
-    "Profit_Factor": "1.00",
-    "Sharpe_Ratio": "-0.00",
+    "Total_Return": "4.91%",
+    "Max_Drawdown": "-3.96%",
+    "Profit_Factor": "1.83",
+    "Sharpe_Ratio": "4.56",
     "Grade_Breakdown": {
       "A+": {
         "trades": 2,
@@ -74,14 +69,9 @@
         "trades": 6,
         "win_rate": "83.3%",
         "expectancy_r": 0.75
-      },
-      "B+": {
-        "trades": 120,
-        "win_rate": "50.8%",
-        "expectancy_r": -0.02
       }
     },
-    "Verdict": "\u274c REJECTED \u2014 Negative expectancy. Do NOT trade live."
+    "Verdict": "\u2705 SOLID \u2014 Real edge exists. Paper trade for 2 weeks then go live."
   },
   "SOLUSD": {
     "Symbol": "SOLUSD",
@@ -92,20 +82,20 @@
     "Min_Confidence": "40%",
     "Risk_Per_Trade": "2.0%",
     "SL_Multiplier": "1.5\u00d7 ATR",
-    "Candles_Total": 2156,
+    "Candles_Total": 2155,
     "Candles_Test_Window": 721,
-    "Signals": 127,
+    "Signals": 19,
     "Skipped_Unknown_Trend": 366,
-    "Wins": 49,
-    "Losses": 76,
-    "Win_Rate": "38.6%",
-    "Expectancy_R": "-0.164R per trade",
+    "Wins": 10,
+    "Losses": 9,
+    "Win_Rate": "52.6%",
+    "Expectancy_R": "0.263R per trade",
     "Best_Trade_R": "+1.5R",
     "Worst_Trade_R": "-1.0R",
-    "Total_Return": "-35.59%",
-    "Max_Drawdown": "-46.04%",
-    "Profit_Factor": "0.73",
-    "Sharpe_Ratio": "-2.40",
+    "Total_Return": "9.87%",
+    "Max_Drawdown": "-7.76%",
+    "Profit_Factor": "1.56",
+    "Sharpe_Ratio": "3.43",
     "Grade_Breakdown": {
       "A+": {
         "trades": 1,
@@ -116,57 +106,46 @@
         "trades": 18,
         "win_rate": "55.6%",
         "expectancy_r": 0.33
-      },
-      "B+": {
-        "trades": 106,
-        "win_rate": "36.8%",
-        "expectancy_r": -0.24
       }
     },
-    "Verdict": "\u274c REJECTED \u2014 Negative expectancy. Do NOT trade live."
+    "Verdict": "\u26a0\ufe0f MARGINAL \u2014 Edge is thin. Raise min_confidence to 55+."
   },
   "XAUUSD": {
     "Symbol": "XAUUSD",
     "Asset_Class": "Gold",
     "Strategy": "SMC v9.3 (OB+FVG+CHoCH+Volume)",
-    "Period": "30 Days",
+    "Period": "60 Days",
     "Interval": "1h",
     "Min_Confidence": "40%",
     "Risk_Per_Trade": "2.0%",
     "SL_Multiplier": "2.0\u00d7 ATR",
-    "Candles_Total": 1424,
-    "Candles_Test_Window": 478,
-    "Signals": 188,
-    "Skipped_Unknown_Trend": 203,
-    "Wins": 83,
-    "Losses": 82,
-    "Win_Rate": "44.1%",
-    "Expectancy_R": "0.076R per trade",
+    "Candles_Total": 1857,
+    "Candles_Test_Window": 985,
+    "Signals": 95,
+    "Skipped_Unknown_Trend": 421,
+    "Wins": 52,
+    "Losses": 30,
+    "Win_Rate": "54.7%",
+    "Expectancy_R": "0.268R per trade",
     "Best_Trade_R": "+1.5R",
     "Worst_Trade_R": "-1.0R",
-    "Total_Return": "23.18%",
-    "Max_Drawdown": "-53.43%",
-    "Profit_Factor": "1.15",
-    "Sharpe_Ratio": "1.07",
+    "Total_Return": "52.37%",
+    "Max_Drawdown": "-24.18%",
+    "Profit_Factor": "1.73",
+    "Sharpe_Ratio": "4.09",
     "Grade_Breakdown": {
       "A+": {
-        "trades": 5,
-        "win_rate": "60.0%",
-        "expectancy_r": 0.1
+        "trades": 6,
+        "win_rate": "66.7%",
+        "expectancy_r": 0.33
       },
       "A": {
-        "trades": 33,
-        "win_rate": "42.4%",
-        "expectancy_r": -0.12
-      },
-      "B+": {
-        "trades": 127,
-        "win_rate": "52.0%",
-        "expectancy_r": 0.13
+        "trades": 76,
+        "win_rate": "63.2%",
+        "expectancy_r": 0.26
       }
     },
-    "Verdict": "\u26a0\ufe0f WEAK \u2014 Positive but unreliable. Do not trade live yet.",
-    "Warning": "Gold needs 60+ days for a valid backtest (you passed 30). Results may be unreliable. Rerun with days=60 or higher."
+    "Verdict": "\u26a0\ufe0f MARGINAL \u2014 Edge is thin. Raise min_confidence to 55+."
   },
   "EURUSD": {
     "Symbol": "EURUSD",
@@ -179,36 +158,26 @@
     "SL_Multiplier": "2.5\u00d7 ATR",
     "Candles_Total": 1523,
     "Candles_Test_Window": 523,
-    "Signals": 159,
+    "Signals": 4,
     "Skipped_Unknown_Trend": 220,
-    "Wins": 75,
-    "Losses": 57,
-    "Win_Rate": "47.2%",
-    "Expectancy_R": "0.027R per trade",
+    "Wins": 3,
+    "Losses": 1,
+    "Win_Rate": "75.0%",
+    "Expectancy_R": "0.875R per trade",
     "Best_Trade_R": "+1.5R",
     "Worst_Trade_R": "-1.0R",
-    "Total_Return": "4.68%",
-    "Max_Drawdown": "-46.33%",
-    "Profit_Factor": "1.06",
-    "Sharpe_Ratio": "0.44",
+    "Total_Return": "7.09%",
+    "Max_Drawdown": "-2.00%",
+    "Profit_Factor": "4.50",
+    "Sharpe_Ratio": "12.83",
     "Grade_Breakdown": {
       "A+": {
         "trades": 4,
         "win_rate": "75.0%",
         "expectancy_r": 0.88
-      },
-      "A": {
-        "trades": 1,
-        "win_rate": "100.0%",
-        "expectancy_r": 1.5
-      },
-      "B+": {
-        "trades": 127,
-        "win_rate": "55.9%",
-        "expectancy_r": -0.01
       }
     },
-    "Verdict": "\u26a0\ufe0f WEAK \u2014 Positive but unreliable. Do not trade live yet.",
+    "Verdict": "\u2705 EXCELLENT \u2014 Deploy to paper immediately. Go live in 2 weeks.",
     "Warning": "Forex needs 90+ days for a valid backtest (you passed 30). Results may be unreliable. Rerun with days=90 or higher."
   },
   "GBPUSD": {
@@ -222,74 +191,26 @@
     "SL_Multiplier": "2.5\u00d7 ATR",
     "Candles_Total": 1523,
     "Candles_Test_Window": 523,
-    "Signals": 126,
+    "Signals": 1,
     "Skipped_Unknown_Trend": 236,
-    "Wins": 35,
-    "Losses": 75,
-    "Win_Rate": "27.8%",
-    "Expectancy_R": "-0.386R per trade",
-    "Best_Trade_R": "+1.5R",
-    "Worst_Trade_R": "-1.0R",
-    "Total_Return": "-58.22%",
-    "Max_Drawdown": "-60.25%",
-    "Profit_Factor": "0.43",
-    "Sharpe_Ratio": "-6.52",
+    "Wins": 1,
+    "Losses": 0,
+    "Win_Rate": "100.0%",
+    "Expectancy_R": "0.500R per trade",
+    "Best_Trade_R": "+0.5R",
+    "Worst_Trade_R": "0.5R",
+    "Total_Return": "1.00%",
+    "Max_Drawdown": "-0.00%",
+    "Profit_Factor": "999.00",
+    "Sharpe_Ratio": "0.00",
     "Grade_Breakdown": {
       "A+": {
         "trades": 1,
         "win_rate": "100.0%",
-        "expectancy_r": 1.5
-      },
-      "A": {
-        "trades": 5,
-        "win_rate": "0.0%",
-        "expectancy_r": -1.0
-      },
-      "B+": {
-        "trades": 104,
-        "win_rate": "32.7%",
-        "expectancy_r": -0.38
+        "expectancy_r": 0.5
       }
     },
-    "Verdict": "\u274c REJECTED \u2014 Negative expectancy. Do NOT trade live.",
-    "Warning": "Forex needs 90+ days for a valid backtest (you passed 30). Results may be unreliable. Rerun with days=90 or higher."
-  },
-  "USDJPY": {
-    "Symbol": "USDJPY",
-    "Asset_Class": "Forex",
-    "Strategy": "SMC v9.3 (OB+FVG+CHoCH+Volume)",
-    "Period": "30 Days",
-    "Interval": "1h",
-    "Min_Confidence": "40%",
-    "Risk_Per_Trade": "2.0%",
-    "SL_Multiplier": "2.5\u00d7 ATR",
-    "Candles_Total": 1513,
-    "Candles_Test_Window": 519,
-    "Signals": 178,
-    "Skipped_Unknown_Trend": 286,
-    "Wins": 48,
-    "Losses": 85,
-    "Win_Rate": "27.0%",
-    "Expectancy_R": "-0.331R per trade",
-    "Best_Trade_R": "+1.5R",
-    "Worst_Trade_R": "-1.0R",
-    "Total_Return": "-59.60%",
-    "Max_Drawdown": "-74.81%",
-    "Profit_Factor": "0.48",
-    "Sharpe_Ratio": "-5.61",
-    "Grade_Breakdown": {
-      "A": {
-        "trades": 19,
-        "win_rate": "10.5%",
-        "expectancy_r": -0.84
-      },
-      "B+": {
-        "trades": 114,
-        "win_rate": "40.4%",
-        "expectancy_r": -0.25
-      }
-    },
-    "Verdict": "\u274c REJECTED \u2014 Negative expectancy. Do NOT trade live.",
+    "Verdict": "\u2705 SOLID \u2014 Real edge exists. Paper trade for 2 weeks then go live.",
     "Warning": "Forex needs 90+ days for a valid backtest (you passed 30). Results may be unreliable. Rerun with days=90 or higher."
   },
   "AUDUSD": {
@@ -303,44 +224,209 @@
     "SL_Multiplier": "2.5\u00d7 ATR",
     "Candles_Total": 1526,
     "Candles_Test_Window": 523,
-    "Signals": 114,
+    "Signals": 3,
     "Skipped_Unknown_Trend": 243,
-    "Wins": 36,
-    "Losses": 65,
-    "Win_Rate": "31.6%",
-    "Expectancy_R": "-0.337R per trade",
+    "Wins": 2,
+    "Losses": 1,
+    "Win_Rate": "66.7%",
+    "Expectancy_R": "0.333R per trade",
     "Best_Trade_R": "+1.5R",
     "Worst_Trade_R": "-1.0R",
-    "Total_Return": "-50.34%",
-    "Max_Drawdown": "-53.13%",
-    "Profit_Factor": "0.48",
-    "Sharpe_Ratio": "-5.71",
+    "Total_Return": "1.95%",
+    "Max_Drawdown": "-2.00%",
+    "Profit_Factor": "2.00",
+    "Sharpe_Ratio": "5.15",
     "Grade_Breakdown": {
       "A+": {
         "trades": 3,
         "win_rate": "66.7%",
-        "expectancy_r": 0.67
-      },
-      "B+": {
-        "trades": 98,
-        "win_rate": "34.7%",
-        "expectancy_r": -0.37
+        "expectancy_r": 0.33
       }
     },
-    "Verdict": "\u274c REJECTED \u2014 Negative expectancy. Do NOT trade live.",
+    "Verdict": "\u2705 SOLID \u2014 Real edge exists. Paper trade for 2 weeks then go live.",
     "Warning": "Forex needs 90+ days for a valid backtest (you passed 30). Results may be unreliable. Rerun with days=90 or higher."
+  },
+  "NVDA": {
+    "Symbol": "NVDA",
+    "Asset_Class": "Stocks",
+    "Strategy": "SMC v9.3 (OB+FVG+CHoCH+Volume)",
+    "Period": "60 Days",
+    "Interval": "1h",
+    "Min_Confidence": "40%",
+    "Risk_Per_Trade": "2.0%",
+    "SL_Multiplier": "1.8\u00d7 ATR",
+    "Candles_Total": 572,
+    "Candles_Test_Window": 303,
+    "Signals": 45,
+    "Skipped_Unknown_Trend": 101,
+    "Wins": 27,
+    "Losses": 18,
+    "Win_Rate": "60.0%",
+    "Expectancy_R": "0.100R per trade",
+    "Best_Trade_R": "+1.5R",
+    "Worst_Trade_R": "-1.0R",
+    "Total_Return": "8.49%",
+    "Max_Drawdown": "-14.10%",
+    "Profit_Factor": "1.25",
+    "Sharpe_Ratio": "1.64",
+    "Grade_Breakdown": {
+      "A": {
+        "trades": 45,
+        "win_rate": "60.0%",
+        "expectancy_r": 0.1
+      }
+    },
+    "Verdict": "\u26a0\ufe0f MARGINAL \u2014 Edge is thin. Raise min_confidence to 55+."
+  },
+  "AMZN": {
+    "Symbol": "AMZN",
+    "Asset_Class": "Stocks",
+    "Strategy": "SMC v9.3 (OB+FVG+CHoCH+Volume)",
+    "Period": "60 Days",
+    "Interval": "1h",
+    "Min_Confidence": "40%",
+    "Risk_Per_Trade": "2.0%",
+    "SL_Multiplier": "1.8\u00d7 ATR",
+    "Candles_Total": 572,
+    "Candles_Test_Window": 303,
+    "Signals": 22,
+    "Skipped_Unknown_Trend": 129,
+    "Wins": 10,
+    "Losses": 12,
+    "Win_Rate": "45.5%",
+    "Expectancy_R": "-0.227R per trade",
+    "Best_Trade_R": "+1.5R",
+    "Worst_Trade_R": "-1.0R",
+    "Total_Return": "-9.85%",
+    "Max_Drawdown": "-18.29%",
+    "Profit_Factor": "0.58",
+    "Sharpe_Ratio": "-4.06",
+    "Grade_Breakdown": {
+      "A+": {
+        "trades": 1,
+        "win_rate": "100.0%",
+        "expectancy_r": 0.5
+      },
+      "A": {
+        "trades": 21,
+        "win_rate": "42.9%",
+        "expectancy_r": -0.26
+      }
+    },
+    "Verdict": "\u274c REJECTED \u2014 Negative expectancy. Do NOT trade live."
+  },
+  "NIFTY": {
+    "Symbol": "NIFTY50",
+    "Asset_Class": "Indices",
+    "Strategy": "SMC v9.3 (OB+FVG+CHoCH+Volume)",
+    "Period": "60 Days",
+    "Interval": "1h",
+    "Min_Confidence": "40%",
+    "Risk_Per_Trade": "2.0%",
+    "SL_Multiplier": "1.8\u00d7 ATR",
+    "Candles_Total": 533,
+    "Candles_Test_Window": 268,
+    "Signals": 4,
+    "Skipped_Unknown_Trend": 101,
+    "Wins": 2,
+    "Losses": 2,
+    "Win_Rate": "50.0%",
+    "Expectancy_R": "0.000R per trade",
+    "Best_Trade_R": "+1.5R",
+    "Worst_Trade_R": "-1.0R",
+    "Total_Return": "-0.09%",
+    "Max_Drawdown": "-3.96%",
+    "Profit_Factor": "1.00",
+    "Sharpe_Ratio": "0.00",
+    "Grade_Breakdown": {
+      "A": {
+        "trades": 4,
+        "win_rate": "50.0%",
+        "expectancy_r": 0.0
+      }
+    },
+    "Verdict": "\u274c REJECTED \u2014 Negative expectancy. Do NOT trade live."
+  },
+  "RELIANCE": {
+    "Symbol": "RELIANCE",
+    "Asset_Class": "Stocks",
+    "Strategy": "SMC v9.3 (OB+FVG+CHoCH+Volume)",
+    "Period": "60 Days",
+    "Interval": "1h",
+    "Min_Confidence": "40%",
+    "Risk_Per_Trade": "2.0%",
+    "SL_Multiplier": "1.8\u00d7 ATR",
+    "Candles_Total": 535,
+    "Candles_Test_Window": 269,
+    "Signals": 32,
+    "Skipped_Unknown_Trend": 138,
+    "Wins": 17,
+    "Losses": 14,
+    "Win_Rate": "53.1%",
+    "Expectancy_R": "-0.177R per trade",
+    "Best_Trade_R": "+0.5R",
+    "Worst_Trade_R": "-1.0R",
+    "Total_Return": "-10.75%",
+    "Max_Drawdown": "-19.13%",
+    "Profit_Factor": "0.61",
+    "Sharpe_Ratio": "-3.77",
+    "Grade_Breakdown": {
+      "A": {
+        "trades": 31,
+        "win_rate": "54.8%",
+        "expectancy_r": -0.18
+      }
+    },
+    "Verdict": "\u274c REJECTED \u2014 Negative expectancy. Do NOT trade live."
+  },
+  "TCS": {
+    "Symbol": "TCS",
+    "Asset_Class": "Stocks",
+    "Strategy": "SMC v9.3 (OB+FVG+CHoCH+Volume)",
+    "Period": "60 Days",
+    "Interval": "1h",
+    "Min_Confidence": "40%",
+    "Risk_Per_Trade": "2.0%",
+    "SL_Multiplier": "1.8\u00d7 ATR",
+    "Candles_Total": 536,
+    "Candles_Test_Window": 269,
+    "Signals": 37,
+    "Skipped_Unknown_Trend": 105,
+    "Wins": 29,
+    "Losses": 5,
+    "Win_Rate": "78.4%",
+    "Expectancy_R": "0.426R per trade",
+    "Best_Trade_R": "+1.5R",
+    "Worst_Trade_R": "-1.0R",
+    "Total_Return": "33.05%",
+    "Max_Drawdown": "-2.03%",
+    "Profit_Factor": "3.90",
+    "Sharpe_Ratio": "9.85",
+    "Grade_Breakdown": {
+      "A+": {
+        "trades": 3,
+        "win_rate": "66.7%",
+        "expectancy_r": 0.33
+      },
+      "A": {
+        "trades": 31,
+        "win_rate": "87.1%",
+        "expectancy_r": 0.44
+      }
+    },
+    "Verdict": "\u2705 EXCELLENT \u2014 Deploy to paper immediately. Go live in 2 weeks."
   },
   "_portfolio": {
     "starting_equity": 10000.0,
-    "final_equity": 1126.3,
-    "total_return_pct": -88.74,
-    "total_trades": 1019,
-    "wins": 464,
-    "losses": 555,
-    "win_rate": 45.5,
-    "expectancy_r": -0.096,
-    "max_drawdown_pct": 95.77,
-    "profit_factor": 0.82,
+    "final_equity": 24529.05,
+    "total_return_pct": 145.29,
+    "total_trades": 263,
+    "wins": 165,
+    "losses": 98,
+    "win_rate": 62.7,
+    "expectancy_r": 0.181,
+    "max_drawdown_pct": 24.18,
+    "profit_factor": 1.48,
     "best_r": 1.5,
     "worst_r": -1.0
   }

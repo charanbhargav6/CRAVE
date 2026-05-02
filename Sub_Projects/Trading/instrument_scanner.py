@@ -141,11 +141,15 @@ class InstrumentScanner:
 
         # ── 3. Bias Strength (+3) ──────────────────────────────────────────
         bias_score = 0
+        direction = None
         try:
             from Sub_Projects.Trading.daily_bias_engine import bias_engine
             bias = bias_engine.get_bias(symbol)
             if bias:
                 bias_val = bias.get("bias", "NO_TRADE")
+                if bias_val == "BUY": direction = "long"
+                elif bias_val == "SELL": direction = "short"
+
                 strength = bias.get("strength", 0)
                 if bias_val != "NO_TRADE":
                     bias_score = min(strength, 3)
@@ -197,8 +201,24 @@ class InstrumentScanner:
         mr_tradeable  = score >= self.MIN_SCORE_MR_TRADE and not smc_tradeable
         tradeable     = smc_tradeable or mr_tradeable
 
+        # ── IMP-01 / IMP-02 Filters ───────────────────────────────────────
+        filter_reason = None
+        if tradeable:
+            vix_ok, vix_reason = self._check_vix_regime(symbol)
+            if not vix_ok:
+                tradeable = False
+                filter_reason = vix_reason
+                
+            if tradeable and direction:
+                dxy_ok, dxy_reason = self._check_dxy_gate(symbol, direction)
+                if not dxy_ok:
+                    tradeable = False
+                    filter_reason = dxy_reason
+
         if not tradeable:
-            if bias_score == 0 and score < self.MIN_SCORE_MR_TRADE:
+            if filter_reason:
+                reason = filter_reason
+            elif bias_score == 0 and score < self.MIN_SCORE_MR_TRADE:
                 reason = "No clear daily bias"
             elif score < self.MIN_SCORE_TO_TRADE:
                 reason = f"Score {score} < minimum {self.MIN_SCORE_TO_TRADE}"
@@ -303,6 +323,47 @@ class InstrumentScanner:
         """Get all tradeable instruments today, ranked by score."""
         ranking = self.run_daily_scan()
         return [item for item in ranking if item["tradeable"]]
+
+    # ── IMP-01: VIX Regime Filter ────────────────────────────────────────────
+    def _check_vix_regime(self, instrument: str) -> tuple:
+        if instrument != "SPY":
+            return True, ""
+        try:
+            from Sub_Projects.Trading.data_agent import get_data_agent
+            df = get_data_agent().get_ohlcv('^VIX', exchange='yfinance', timeframe='1d', limit=5)
+            if df is not None and not df.empty:
+                vix = df['close'].iloc[-1]
+                if vix > 25:
+                    msg = f"SPY blocked: VIX={vix:.1f} > 25 (fear regime)"
+                    logger.info(f"[Scanner] {msg}")
+                    return False, msg
+        except Exception as e:
+            logger.debug(f"[Scanner] VIX fetch failed: {e}")
+        return True, ""
+
+    # ── IMP-02: DXY Inverse Gate ─────────────────────────────────────────────
+    def _check_dxy_gate(self, instrument: str, direction: str) -> tuple:
+        if instrument not in ("XAUUSD=X", "XAUUSD", "GC=F"):
+            return True, ""
+        try:
+            from Sub_Projects.Trading.data_agent import get_data_agent
+            df = get_data_agent().get_ohlcv('DX-Y.NYB', exchange='yfinance', timeframe='1d', limit=10)
+            if df is not None and len(df) >= 5:
+                current_dxy = df['close'].iloc[-1]
+                prev_dxy = df['close'].iloc[-5]
+                dxy_mom = (current_dxy - prev_dxy) / prev_dxy
+
+                if direction == "long" and dxy_mom > 0.003:
+                    msg = f"Gold LONG blocked: DXY rising {dxy_mom*100:.2f}% (5d)"
+                    logger.info(f"[Scanner] {msg}")
+                    return False, msg
+                if direction == "short" and dxy_mom < -0.003:
+                    msg = f"Gold SHORT blocked: DXY falling {dxy_mom*100:.2f}% (5d)"
+                    logger.info(f"[Scanner] {msg}")
+                    return False, msg
+        except Exception as e:
+            logger.debug(f"[Scanner] DXY fetch failed: {e}")
+        return True, ""
 
     # ─────────────────────────────────────────────────────────────────────────
     # HELPERS
