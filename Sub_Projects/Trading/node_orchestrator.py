@@ -82,8 +82,10 @@ class NodeOrchestrator:
             try:
                 with open(self._heartbeat_file) as f:
                     self._heartbeats = json.load(f)
-            except Exception:
-                self._heartbeats = {}
+            except Exception as e:
+                logger.debug(f"[Orchestrator] Heartbeat read failed, keeping in-memory state. Error: {e}")
+                if not self._heartbeats:
+                    self._heartbeats = {}
 
     def _save_heartbeats(self):
         try:
@@ -260,7 +262,15 @@ class NodeOrchestrator:
         4. Handle manual switch requests
         """
         last_active_check = 0
-        was_active        = self._is_active
+        last_notify_time  = 0   # FIX: cooldown to prevent rapid notifications
+
+        # FIX: Initialize was_active from actual election to avoid false
+        # state-change notification on first iteration
+        self._send_heartbeat()
+        self._load_heartbeats()
+        elected = self._elect_active_node()
+        self._is_active = (elected == self._my_node)
+        was_active      = self._is_active
 
         while self._running:
             now = time.time()
@@ -312,9 +322,10 @@ class NodeOrchestrator:
                         except Exception:
                             pass
 
-                # Notify on state change
-                if was_active != self._is_active:
+                # Notify on state change (with 60s cooldown to prevent spam)
+                if was_active != self._is_active and (now - last_notify_time) > 60:
                     was_active = self._is_active
+                    last_notify_time = now
                     state = "ACTIVE" if self._is_active else "STANDBY"
                     logger.info(f"[Orchestrator] Node state → {state}")
                     try:
@@ -324,6 +335,9 @@ class NodeOrchestrator:
                         )
                     except Exception:
                         pass
+                elif was_active != self._is_active:
+                    # Update was_active even if we skip notification
+                    was_active = self._is_active
 
             time.sleep(self.HEARTBEAT_INTERVAL_SECS)
 

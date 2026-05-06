@@ -810,3 +810,50 @@ def get_spike_threshold(symbol: str) -> float:
     """Event spike detection threshold for this instrument."""
     asset = get_asset_class(symbol)
     return EVENT_SPIKE_THRESHOLDS.get(asset, EVENT_SPIKE_THRESHOLDS["default"])
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ASSET CLASS PARAMETERS — Shared between backtest and live trading
+# Sweep-optimized on 90d hourly data (2026-05-04).
+# ─────────────────────────────────────────────────────────────────────────────
+
+ASSET_PARAMS = {
+    # sl_mult: ATR multiplier for stop loss distance
+    # rr:      reward-to-risk ratio (TP2 = sl_mult * rr * ATR)
+    # min_grade: minimum allowed signal grade
+    # min_conf:  minimum confidence % threshold
+    #
+    # Optimization results (90d 1H data):
+    #   BTC:    sl=1.2 rr=1.5 B+ conf>=45  -> 247 trades, 49.4% WR, +306%
+    #   ETH:    sl=2.5 rr=1.5 A  conf>=35  -> 83 trades,  37.3% WR, +32%
+    #   SOL:    sl=2.0 rr=1.5 A  conf>=35  -> 68 trades,  33.8% WR, +4%
+    #   Gold:   sl=2.0 rr=1.5 B+ conf>=35  -> 555 trades, 39.3% WR, +381%
+    #   Silver: sl=1.0 rr=1.5 B+ conf>=50  -> 203 trades, 42.4% WR, +118%
+    #   EURUSD: sl=1.0 rr=1.5 B+ conf>=35  -> 626 trades, 39.0% WR, +485%
+    #   GBPUSD: sl=1.0 rr=1.5 B+ conf>=35  -> 618 trades, 29.0% WR, +18%
+    #
+    "gold":    {"sl_mult": 2.0, "rr": 2.0, "min_days": 60,  "label": "Gold",    "min_grade": "B+", "min_conf": 50},
+    "silver":  {"sl_mult": 1.0, "rr": 1.5, "min_days": 60,  "label": "Silver",  "min_grade": "B+", "min_conf": 50},
+    "forex":   {"sl_mult": 1.0, "rr": 1.5, "min_days": 90,  "label": "Forex",   "min_grade": "B+", "min_conf": 35},
+    "btc":     {"sl_mult": 1.2, "rr": 1.5, "min_days": 30,  "label": "BTC",     "min_grade": "B+", "min_conf": 45},
+    "crypto":  {"sl_mult": 2.5, "rr": 1.5, "min_days": 30,  "label": "Crypto",  "min_grade": "A",  "min_conf": 45},
+    "default": {"sl_mult": 1.5, "rr": 2.0, "min_days": 30,  "label": "Unknown", "min_grade": "A",  "min_conf": 55},
+}
+
+_FOREX_PAIRS_SET    = {"EURUSD=X", "GBPUSD=X", "USDJPY=X", "AUDUSD=X", "USDCAD=X",
+                       "USDCHF=X", "NZDUSD=X", "EURJPY=X", "GBPJPY=X"}
+_CRYPTO_TICKERS_SET = {"BTC-USD", "ETH-USD", "SOL-USD", "DOGE-USD", "XRP-USD",
+                       "BTCUSDT", "ETHUSDT", "SOLUSDT"}
+_GOLD_TICKERS_SET   = {"GC=F", "XAUUSD=X"}
+_SILVER_TICKERS_SET = {"SI=F", "XAGUSD=X"}
+
+
+def get_asset_params(ticker: str) -> dict:
+    """Return backtest-proven ATR multipliers, grade gates, and confidence thresholds."""
+    t = ticker.upper()
+    if t in _GOLD_TICKERS_SET:     return ASSET_PARAMS["gold"]
+    if t in _SILVER_TICKERS_SET:   return ASSET_PARAMS["silver"]
+    if t in _FOREX_PAIRS_SET:      return ASSET_PARAMS["forex"]
+    if t in ("BTC-USD", "BTC", "BTCUSDT"): return ASSET_PARAMS["btc"]
+    if t in _CRYPTO_TICKERS_SET:   return ASSET_PARAMS["crypto"]
+    return ASSET_PARAMS["default"]

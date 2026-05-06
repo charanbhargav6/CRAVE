@@ -212,6 +212,8 @@ class MarketDataRouter:
         """yfinance fetch — works for backtest and paper trading."""
         try:
             import yfinance as yf
+            import logging as yf_logging
+            yf_logging.getLogger('yfinance').setLevel(yf_logging.CRITICAL)
 
             tf_map = {
                 "1m": "1m", "5m": "5m", "15m": "15m", "30m": "30m",

@@ -118,42 +118,35 @@ def _wilder_atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# ASSET CLASS PARAMETERS
+# ASSET CLASS PARAMETERS — imported from shared config (single source of truth)
 # ─────────────────────────────────────────────────────────────────────────────
-ASSET_PARAMS = {
-    # min_grade: minimum allowed grade ("A+" = only A+, "A" = A+ and A, "B+" = A+/A/B+)
-    # min_conf:  minimum confidence % override (higher = fewer but better trades)
-    "gold":    {"sl_mult": 2.0, "rr": 2.0, "min_days": 60,  "label": "Gold",    "min_grade": "A",  "min_conf": 50},
-    "silver":  {"sl_mult": 2.0, "rr": 2.0, "min_days": 60,  "label": "Silver",  "min_grade": "A",  "min_conf": 50},
-    "forex":   {"sl_mult": 2.5, "rr": 3.0, "min_days": 90,  "label": "Forex",   "min_grade": "A+", "min_conf": 65},
-    "btc":     {"sl_mult": 1.5, "rr": 2.0, "min_days": 30,  "label": "BTC",     "min_grade": "B+", "min_conf": 40},
-    "crypto":  {"sl_mult": 1.5, "rr": 2.0, "min_days": 30,  "label": "Crypto",  "min_grade": "A",  "min_conf": 45},
-    "stocks":  {"sl_mult": 1.8, "rr": 2.5, "min_days": 60,  "label": "Stocks",  "min_grade": "A",  "min_conf": 55},
-    "indices": {"sl_mult": 1.8, "rr": 2.5, "min_days": 60,  "label": "Indices", "min_grade": "A",  "min_conf": 55},
-    "default": {"sl_mult": 1.5, "rr": 2.0, "min_days": 30,  "label": "Unknown", "min_grade": "A",  "min_conf": 55},
-}
+try:
+    from Config.config import ASSET_PARAMS, get_asset_params
+except ImportError:
+    # Fallback for standalone use
+    ASSET_PARAMS = {
+        "gold":    {"sl_mult": 2.0, "rr": 1.5, "min_days": 60,  "label": "Gold",    "min_grade": "B+", "min_conf": 35},
+        "silver":  {"sl_mult": 1.0, "rr": 1.5, "min_days": 60,  "label": "Silver",  "min_grade": "B+", "min_conf": 50},
+        "forex":   {"sl_mult": 1.0, "rr": 1.5, "min_days": 90,  "label": "Forex",   "min_grade": "B+", "min_conf": 35},
+        "btc":     {"sl_mult": 1.2, "rr": 1.5, "min_days": 30,  "label": "BTC",     "min_grade": "B+", "min_conf": 45},
+        "crypto":  {"sl_mult": 2.5, "rr": 1.5, "min_days": 30,  "label": "Crypto",  "min_grade": "A",  "min_conf": 35},
+        "default": {"sl_mult": 1.5, "rr": 2.0, "min_days": 30,  "label": "Unknown", "min_grade": "A",  "min_conf": 55},
+    }
 
-FOREX_PAIRS    = {"EURUSD=X", "GBPUSD=X", "USDJPY=X", "AUDUSD=X", "USDCAD=X",
-                  "USDCHF=X", "NZDUSD=X", "EURJPY=X", "GBPJPY=X"}
-CRYPTO_TICKERS = {"BTC-USD", "ETH-USD", "SOL-USD", "DOGE-USD", "XRP-USD"}
-GOLD_TICKERS   = {"GC=F"}
-SILVER_TICKERS = {"SI=F"}
-INDEX_TICKERS  = {"^NSEI", "^BSESN", "^NSEBANK", "SPY", "QQQ", "^GSPC", "^NDX"}
-US_STOCK_TICKERS = {"AAPL", "TSLA", "MSFT", "NVDA", "AMZN", "META", "GOOGL", "AMD", "NFLX"}
+    FOREX_PAIRS    = {"EURUSD=X", "GBPUSD=X", "USDJPY=X", "AUDUSD=X", "USDCAD=X",
+                      "USDCHF=X", "NZDUSD=X", "EURJPY=X", "GBPJPY=X"}
+    CRYPTO_TICKERS = {"BTC-USD", "ETH-USD", "SOL-USD", "DOGE-USD", "XRP-USD"}
+    GOLD_TICKERS   = {"GC=F"}
+    SILVER_TICKERS = {"SI=F"}
 
-
-def get_asset_params(ticker: str) -> dict:
-    """Return the correct ATR multipliers and minimum days for this asset class."""
-    t = ticker.upper()
-    if t in GOLD_TICKERS:     return ASSET_PARAMS["gold"]
-    if t in SILVER_TICKERS:   return ASSET_PARAMS["silver"]
-    if t in FOREX_PAIRS:      return ASSET_PARAMS["forex"]
-    if t in ["BTC-USD", "BTC"]: return ASSET_PARAMS["btc"]
-    if t in CRYPTO_TICKERS:   return ASSET_PARAMS["crypto"]
-    if t in INDEX_TICKERS:    return ASSET_PARAMS["indices"]
-    if t in US_STOCK_TICKERS: return ASSET_PARAMS["stocks"]
-    if t.endswith(".NS") or t.endswith(".BO"): return ASSET_PARAMS["stocks"]
-    return ASSET_PARAMS["default"]
+    def get_asset_params(ticker: str) -> dict:
+        t = ticker.upper()
+        if t in GOLD_TICKERS:     return ASSET_PARAMS["gold"]
+        if t in SILVER_TICKERS:   return ASSET_PARAMS["silver"]
+        if t in FOREX_PAIRS:      return ASSET_PARAMS["forex"]
+        if t in ("BTC-USD", "BTC"): return ASSET_PARAMS["btc"]
+        if t in CRYPTO_TICKERS:   return ASSET_PARAMS["crypto"]
+        return ASSET_PARAMS["default"]
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -292,7 +285,9 @@ class BacktestAgent:
 
         # ── Warmup pre-fetch ──
         warmup_extra_days = 60
-        interval = "1d" if days > 60 else "1h"
+        # FIX: Always use 1h — daily candles don't provide enough data points
+        # for SMA200 warmup. yfinance supports up to 730 days of hourly data.
+        interval = "1h"
 
         df = self.fetch_data_yfinance(
             symbol, days, interval,
@@ -303,12 +298,20 @@ class BacktestAgent:
             return {"error": f"Not enough data for {display_name(ticker)}."}
 
         df['atr'] = _wilder_atr(df, 14)
-        df = self._attach_indicators(df)
         
-        # Build SMC pattern catalogs once on the full dataframe
-        fvg_catalog = self.strategy._build_fvg_catalog(df)
-        ob_catalog  = self.strategy._build_ob_catalog(df)
-        structure   = self.strategy._build_structure(df)
+        # ── Route gold to dedicated gold strategy ─────────────────────────
+        is_gold = ticker in ("GC=F", "XAUUSD=X")
+        
+        if is_gold:
+            from gold_strategy import attach_gold_indicators, analyze_gold
+            df = attach_gold_indicators(df)
+            logger.info(f"[Backtest] Using Gold Trend-Pullback strategy for {ticker}")
+        else:
+            df = self._attach_indicators(df)
+            # Build SMC pattern catalogs once on the full dataframe
+            fvg_catalog = self.strategy._build_fvg_catalog(df)
+            ob_catalog  = self.strategy._build_ob_catalog(df)
+            structure   = self.strategy._build_structure(df)
 
         # ── Find where the actual test window starts ──
         test_start_cutoff = df['time'].iloc[-1] - pd.Timedelta(days=days)
@@ -336,20 +339,33 @@ class BacktestAgent:
         for i in range(signal_start, len(df) - lookahead):
             future = df.iloc[i: i + lookahead].copy()
 
-            context    = self.strategy.analyze_market_context(ticker, df, i-1, fvg_catalog, ob_catalog, structure)
-            if "error" in context:
-                continue
+            # ── Gold: use dedicated strategy ──
+            if is_gold:
+                gold_sig = analyze_gold(df, i)
+                if gold_sig["direction"] is None:
+                    if gold_sig.get("macro_trend") == "Unknown":
+                        skipped_unknown_trend += 1
+                    continue
+                confidence  = gold_sig["confidence"]
+                score       = f"Grade {gold_sig['grade']}"
+                macro_trend = gold_sig["macro_trend"]
+                direction   = gold_sig["direction"]
+            else:
+                # ── SMC: use standard strategy ──
+                context = self.strategy.analyze_market_context(
+                    ticker, df, i-1, fvg_catalog, ob_catalog, structure
+                )
+                if "error" in context:
+                    continue
+                confidence  = context.get("Confidence_Pct", 0)
+                score       = context.get("Structure_Score", "C")
+                macro_trend = context.get("Macro_Trend", "Unknown")
 
-            confidence   = context.get("Confidence_Pct", 0)
-            score        = context.get("Structure_Score", "C")
-            macro_trend  = context.get("Macro_Trend", "Unknown")
+                if macro_trend == "Unknown":
+                    skipped_unknown_trend += 1
+                    continue
 
-            # ── FIX: Never trade Unknown trend ──
-            if macro_trend == "Unknown":
-                skipped_unknown_trend += 1
-                continue
-
-            direction = "buy" if macro_trend == "Bullish" else "sell"
+                direction = "buy" if macro_trend == "Bullish" else "sell"
 
             # ── Per-asset confidence and grade filtering ──
             asset_min_conf = asset_p.get("min_conf", min_confidence)

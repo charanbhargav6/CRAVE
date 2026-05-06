@@ -188,10 +188,10 @@ class RiskAgent:
         """
         Master trade validation.
 
-        FIX v9.1: The returned packet now includes 'atr_value' explicitly.
-        This is required by ExecutionAgent's trailing SL logic which MUST use
-        ATR-based trailing (not a hardcoded 0.5% percentage).
-        See execution_agent_v9_1.py for how this is consumed.
+        v10.6: Now uses ASSET_PARAMS for sl_mult and rr to match backtest exactly.
+        Before: hardcoded sl_mult=2.0, rr=2.0 for everything.
+        After:  Gold=2.0/2.0, Forex=2.5/3.0, BTC=1.5/2.0, Stocks=1.8/2.5
+        This is critical for paper/live results to match backtest performance.
         """
         allowed, reason = self.check_drawdown_limit(current_equity)
         if not allowed:
@@ -210,15 +210,20 @@ class RiskAgent:
 
         atr = self.calculate_atr(df)
 
+        # v10.6: Use asset-specific SL/TP from ASSET_PARAMS (matches backtest)
+        try:
+            from Config.config import get_asset_params
+            asset_p = get_asset_params(symbol)
+            sl_mult = asset_p["sl_mult"]
+            rr      = asset_p["rr"]
+        except Exception:
+            sl_mult = 2.0
+            rr      = 2.0
+
+        # Override for swing trades only
         if is_swing:
             sl_mult = 3.5
             rr      = 3.0
-        elif confidence_pct >= 75:
-            sl_mult = 1.5
-            rr      = 2.5
-        else:
-            sl_mult = 2.0
-            rr      = 2.0
 
         if direction in ("buy", "long"):
             sl_price  = entry_price - (atr * sl_mult)

@@ -508,11 +508,14 @@ class TradingLoop:
             prop_risk_multiplier *= 0.5
 
         # ── 4. Routing ────────────────────────────────────────────────────
-        if regime == "RANGING":
-            return self._analyse_mean_reversion(symbol, kz_name, regime, prop_risk_multiplier)
+        from Config.config import get_asset_params
+        is_gold = get_asset_params(symbol).get("label") == "Gold"
 
-        elif regime in ("TRENDING_UP", "TRENDING_DOWN", "VOLATILE"):
+        # Gold has its own trend/ranging logic in gold_strategy.py
+        if is_gold or regime in ("TRENDING_UP", "TRENDING_DOWN", "VOLATILE"):
             return self._analyse_and_execute(symbol, kz_name, prop_risk_multiplier)
+        elif regime == "RANGING":
+            return self._analyse_mean_reversion(symbol, kz_name, regime, prop_risk_multiplier)
         else:
             logger.info(f"[TradingLoop] {symbol}: Regime={regime} - unfavourable. Skipping.")
             return None
@@ -568,7 +571,8 @@ class TradingLoop:
                               prop_risk_multiplier: float = 1.0) -> Optional[dict]:
         logger.info(f"[TradingLoop] Analysing {symbol} ({kz_name})...")
 
-        df_15m = _get_ohlcv_with_ws_fallback(symbol, "15m", 250)
+        # FIX: Fetch 500 candles so SMA_200 is fully warmed (matches backtest)
+        df_15m = _get_ohlcv_with_ws_fallback(symbol, "15m", 500)
         df_1h = _get_ohlcv_with_ws_fallback(symbol, "1h", 250)
         df_4h = _get_ohlcv_with_ws_fallback(symbol, "4h", 60)
 
@@ -576,10 +580,44 @@ class TradingLoop:
             logger.warning(f"[TradingLoop] Insufficient data for {symbol}")
             return None
 
-        from Sub_Projects.Trading.strategy_agent import StrategyAgent
-        strategy = StrategyAgent()
-        # Execute SMC analysis on the 15m TF for tighter entries
-        context  = strategy.analyze_market_context(symbol, df_15m)
+        # ── Route gold to dedicated pullback strategy ─────────────────────
+        from Config.config import get_asset_params as _gap
+        _is_gold = _gap(symbol).get("label") == "Gold"
+
+        if _is_gold:
+            from Sub_Projects.Trading.gold_strategy import (
+                attach_gold_indicators, analyze_gold_context
+            )
+            df_15m = attach_gold_indicators(df_15m)
+            context = analyze_gold_context(symbol, df_15m, len(df_15m) - 1)
+            logger.info(f"[TradingLoop] {symbol}: Gold pullback strategy used")
+        else:
+            # ── Pre-attach indicators (matching backtest exactly) ─────────
+            import numpy as np
+            df_15m = df_15m.copy()
+            df_15m['EMA_21']  = df_15m['close'].ewm(span=21, adjust=False).mean()
+            df_15m['SMA_50']  = df_15m['close'].rolling(50).mean()
+            df_15m['SMA_200'] = df_15m['close'].rolling(200).mean()
+            delta = df_15m['close'].diff()
+            gain  = delta.clip(lower=0).rolling(14).mean()
+            loss  = (-delta.clip(upper=0)).rolling(14).mean()
+            df_15m['rsi_14'] = 100 - (100 / (1 + gain / loss.replace(0, np.nan)))
+
+            from Sub_Projects.Trading.strategy_agent import StrategyAgent
+            strategy = StrategyAgent()
+            
+            # ── Pre-compute SMC catalogs (matching backtest architecture) ─
+            fvg_catalog = strategy._build_fvg_catalog(df_15m)
+            ob_catalog  = strategy._build_ob_catalog(df_15m)
+            structure   = strategy._build_structure(df_15m)
+            
+            context = strategy.analyze_market_context(
+                symbol, df_15m,
+                i=len(df_15m) - 1,
+                fvg_catalog=fvg_catalog,
+                ob_catalog=ob_catalog,
+                structure=structure
+            )
 
         if "error" in context:
             return None
@@ -613,9 +651,20 @@ class TradingLoop:
         if grade is None:
             return None
 
-        min_conf_grade = {"A+": 55, "A": 50, "B+": 45, "B": 40}.get(grade, 40)
+        # ── ASSET_PARAMS grade gate (matching backtest exactly) ───────────
+        from Config.config import get_asset_params
+        asset_p = get_asset_params(symbol)
+        
+        asset_min_grade = asset_p.get("min_grade", "B+")
+        allowed_grades = {"A+": ["A+"], "A": ["A+", "A"], "B+": ["A+", "A", "B+"]}
+        if grade not in allowed_grades.get(asset_min_grade, ["A+", "A", "B+"]):
+            logger.info(f"[TradingLoop] {symbol}: Grade {grade} rejected (min required: {asset_min_grade})")
+            return None
+
+        # ── ASSET_PARAMS confidence gate (matching backtest exactly) ──────
+        asset_min_conf = asset_p.get("min_conf", 50)
         inst_conf_gate = CONFIDENCE_GATES.get(symbol, CONFIDENCE_GATES.get("default", 0.50)) * 100
-        min_conf = max(min_conf_grade, inst_conf_gate)
+        min_conf = max(asset_min_conf, inst_conf_gate)
         
         if confidence < min_conf:
             logger.info(f"[TradingLoop] {symbol}: SMC confidence {confidence}% below gate {min_conf}%")

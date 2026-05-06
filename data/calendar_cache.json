@@ -163,7 +163,8 @@
         "BTCUSDT",
         "NIFTY50"
       ],
-      "source": "hardcoded"
+      "source": "hardcoded",
+      "minutes_away": 6415
     },
     {
       "name": "FOMC Rate Decision",
@@ -429,7 +430,21 @@
         "US30"
       ],
       "source": "hardcoded"
+    },
+    {
+      "name": "NFP (Non-Farm Payrolls)",
+      "datetime": "2026-08-07T12:30:00+00:00",
+      "country": "US",
+      "impact": "high",
+      "affects": [
+        "EURUSD",
+        "GBPUSD",
+        "XAUUSD",
+        "SPY",
+        "US30"
+      ],
+      "source": "hardcoded"
     }
   ],
-  "ts": 1777684154.510087
+  "ts": 1777987563.6028755
 }

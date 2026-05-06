@@ -219,12 +219,8 @@ def main():
     try:
         from Sub_Projects.Trading.telegram_interface import tg
         tg.start()
-        tg.send(
-            f"🚀 CRAVE v10.0 Started\n"
-            f"Node: {node}\n"
-            f"Mode: {mode}\n"
-            f"Time: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}"
-        )
+        # Removed duplicate tg.send("🚀 CRAVE v10.0 Started...") here
+        # The orchestrator handles node state notifications.
     except Exception as e:
         logger.warning(f"[Main] Telegram startup failed: {e}")
 

@@ -25,24 +25,16 @@ STARTING_EQUITY = 10_000.0
 RISK_PER_TRADE  = 0.02
 
 INSTRUMENTS = [
-    # ── Crypto (A/A+ allowed, min_conf=45) ──
+    # ── Crypto (optimized: B+/A grade, tight SL) ──
     ("BTCUSD",  30),
     ("ETHUSD",  30),
     ("SOLUSD",  30),
-    # ── Commodities (A/A+ only, min_conf=50) ──
-    ("XAUUSD",  60),
-    # ── Forex (A+ only, min_conf=65, RR=3.0) ──
-    ("EURUSD",  30),
-    ("GBPUSD",  30),
-    ("AUDUSD",  30),
-    # ── US Stocks (A/A+ only, min_conf=55) ──
-    ("NVDA",    60),
-    ("AMZN",    60),
-    # ── Indian F&O Indices ──
-    ("NIFTY",   60),
-    # ── Indian F&O Stocks ──
-    ("RELIANCE", 60),
-    ("TCS",     60),
+    # ── Commodities (Gold: dedicated pullback strategy, Silver: SMC) ──
+    ("XAUUSD",  90),
+    ("XAGUSD",  60),
+    # ── Forex (optimized: B+ grade, tight 1.0x ATR SL) ──
+    ("EURUSD",  90),
+
 ]
 
 

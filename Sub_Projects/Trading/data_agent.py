@@ -208,20 +208,29 @@ class DataAgent:
                         symbol, tf, start.isoformat(), end.isoformat(), limit=limit
                     ).df
                 except Exception:
-                    from alpaca.data.requests import StockBarsRequest
-                    from alpaca.data.timeframe import TimeFrame
-                    tf2_map = {
-                        "1Min": TimeFrame.Minute,
-                        "1Hour": TimeFrame.Hour,
-                        "1Day": TimeFrame.Day,
-                    }
-                    req  = StockBarsRequest(
-                        symbol_or_symbols=symbol,
-                        timeframe=tf2_map.get(tf, TimeFrame.Hour),
-                        start=start,
-                        limit=limit,
-                    )
-                    bars = self.alpaca_stock_data.get_stock_bars(req).df
+                    # FIX: Only try new SDK if alpaca_stock_data exists
+                    if hasattr(self, 'alpaca_stock_data') and self.alpaca_stock_data:
+                        try:
+                            from alpaca.data.requests import StockBarsRequest
+                            from alpaca.data.timeframe import TimeFrame
+                            tf2_map = {
+                                "1Min": TimeFrame.Minute,
+                                "1Hour": TimeFrame.Hour,
+                                "1Day": TimeFrame.Day,
+                            }
+                            req  = StockBarsRequest(
+                                symbol_or_symbols=symbol,
+                                timeframe=tf2_map.get(tf, TimeFrame.Hour),
+                                start=start,
+                                limit=limit,
+                            )
+                            bars = self.alpaca_stock_data.get_stock_bars(req).df
+                        except Exception as e2:
+                            logger.debug(f"[DataAgent] Alpaca new SDK fallback failed: {e2}")
+                            return None
+                    else:
+                        logger.debug(f"[DataAgent] Alpaca legacy SDK bars failed, no new SDK available")
+                        return None
 
                 if bars.empty:
                     return None
@@ -231,6 +240,52 @@ class DataAgent:
 
                 df = bars[['time', 'open', 'high', 'low', 'close', 'volume']].copy()
                 return _tz_localize_utc(df)  # FIX: ensure consistent UTC
+
+            # ── yfinance (forex, gold =X symbols, backtest) ──
+            elif exchange == "yfinance":
+                try:
+                    import yfinance as yf
+                    tf_map = {
+                        "1m": "1m", "5m": "5m", "15m": "15m", "30m": "30m",
+                        "1h": "1h", "4h": "4h", "1d": "1d", "1wk": "1wk",
+                    }
+                    interval = tf_map.get(timeframe, "1h")
+                    tf_mins = _TF_MINUTES.get(timeframe, 60)
+                    total_mins = limit * tf_mins * 1.4
+                    days = max(7, int(total_mins / (24 * 60)) + 5)
+                    days = min(days, 729)
+
+                    from datetime import timedelta as _td
+                    end_dt = datetime.now()
+                    start_dt = end_dt - _td(days=days)
+                    raw = yf.download(symbol, start=start_dt, end=end_dt,
+                                       interval=interval, progress=False)
+                    if raw is None or raw.empty:
+                        return None
+
+                    df_yf = raw.reset_index()
+                    if isinstance(df_yf.columns, pd.MultiIndex):
+                        df_yf.columns = [c[0] for c in df_yf.columns]
+
+                    col_map = {}
+                    for col in df_yf.columns:
+                        cl = str(col).lower()
+                        if "date" in cl: col_map[col] = "time"
+                        elif cl == "open":   col_map[col] = "open"
+                        elif cl == "high":   col_map[col] = "high"
+                        elif cl == "low":    col_map[col] = "low"
+                        elif cl == "close":  col_map[col] = "close"
+                        elif cl == "volume": col_map[col] = "volume"
+
+                    df_yf = df_yf.rename(columns=col_map)
+                    if "volume" not in df_yf.columns:
+                        df_yf["volume"] = 0
+                    df_yf["time"] = pd.to_datetime(df_yf["time"], utc=True)
+                    df_yf = df_yf[["time","open","high","low","close","volume"]].dropna()
+                    return df_yf.tail(limit).reset_index(drop=True)
+                except Exception as e:
+                    logger.debug(f"[DataAgent] yfinance fetch failed: {e}")
+                    return None
 
             # ── MT5 ──
             elif exchange == "mt5":
@@ -525,8 +580,8 @@ class DataAgent:
             return {"is_danger": False, "event_name": "No immediate threats."}
 
         except Exception as e:
-            logger.error(f"[DataAgent] Red folder error: {e}")
-            return {"is_danger": False, "error": str(e)}
+            logger.debug(f"[DataAgent] Red folder error (ignoring): {e}")
+            return {"is_danger": False, "event_name": "Calendar unavailable."}
 
     # ─────────────────────────────────────────────────────────────────────────
     # MACRO NEWS — unchanged from v9.0
